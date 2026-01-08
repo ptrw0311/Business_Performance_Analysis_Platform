@@ -60,7 +60,7 @@ function FinanceChart({ labels, revenue, profit, selectedYear, onYearChange }) {
       ctx.fillText('(Net profit margin)', 0, bottomY + 8);
 
       if (revenue && profit && revenue.length === profit.length) {
-        const margins = revenue.map((rev, i) => ((profit[i] / rev) * 100).toFixed(0) + '%');
+        const margins = revenue.map((rev, i) => ((profit[i] / rev) * 100).toFixed(1) + '%');
         ctx.font = 'bold 16px Arial, sans-serif';
         ctx.textAlign = 'center';
 

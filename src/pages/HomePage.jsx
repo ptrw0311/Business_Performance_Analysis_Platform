@@ -258,6 +258,10 @@ function HomePage() {
         onUpdateData={handleUpdateData}
         onBulkImport={handleBulkImport}
       />
+
+      <div style={{ textAlign: 'right', marginTop: '20px', fontSize: '12px', color: '#999' }}>
+        produced by Kevin
+      </div>
     </div>
   );
 }

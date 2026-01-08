@@ -16,8 +16,8 @@ function StatCards({ companyName, labels, revenue, profit }) {
 
     const avgRev = Math.round(sumRev / count).toLocaleString();
     const avgPro = Math.round(sumPro / count).toLocaleString();
-    let avgMar = '0%';
-    if (sumRev > 0) avgMar = ((sumPro / sumRev) * 100).toFixed(0) + '%';
+    let avgMar = '0.0%';
+    if (sumRev > 0) avgMar = ((sumPro / sumRev) * 100).toFixed(1) + '%';
 
     return { avgRev, avgProfit: avgPro, avgMar };
   }, [labels, revenue, profit]);
