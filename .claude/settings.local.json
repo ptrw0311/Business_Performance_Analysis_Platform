@@ -1,0 +1,23 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python -c \"import json; json.load\\(open\\(''.mcp.json''\\)\\); print\\(''✓ JSON 語法正確''\\)\")",
+      "Bash(python -c \"import json; json.load\\(open\\(''.mcp.json''\\)\\); print\\(''JSON syntax valid''\\)\")",
+      "Bash(node:*)",
+      "Bash(npx:*)",
+      "Bash(python:*)",
+      "Bash(cat:*)",
+      "Bash(ls:*)",
+      "Bash(xargs cat:*)",
+      "Bash(grep:*)",
+      "Bash(claude doctor:*)",
+      "Bash(npm create vite:*)",
+      "Bash(npm install:*)",
+      "Bash(npm run build:*)",
+      "Bash(npm run dev)",
+      "Bash(npm run dev:*)",
+      "Bash(git init:*)",
+      "Bash(git add:*)"
+    ]
+  }
+}

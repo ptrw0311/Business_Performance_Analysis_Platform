@@ -1,0 +1,31 @@
+{
+  "mcpServers": {
+    "n8n-mcp": {
+      "command": "node",
+      "args": ["D:\\vscode\\SubtitleLingo\\n8n-mcp-server.js"],
+      "env": {
+        "N8N_URL": "https://ptrw0311-n8n-free.hf.space"
+      }
+    },
+    "playwright": {
+      "command": "npx",
+      "args": ["@playwright/mcp@latest"],
+      "env": {}
+    },
+    "turso": {
+      "command": "npx",
+      "args": ["-y", "@prama13/turso-mcp"],
+      "env": {
+        "TURSO_DATABASE_URL": "libsql://bpap-peterwang.aws-ap-northeast-1.turso.io",
+        "TURSO_AUTH_TOKEN": "eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.eyJhIjoicnciLCJpYXQiOjE3Njc4NDIxNDEsImlkIjoiMTM5ZjhiMzQtZTdlMi00YjJmLWJjZjUtNzcxYzUzMGJmYmY5IiwicmlkIjoiOTc4M2ZjMTItNmViOC00MWQ4LTg1NTgtM2ExOThlZjRjZWIzIn0.SNkzKSMp1ImSR3yCDLQhJE8bd3ClCZA4W18Ot-pkNO3dGMUsHXP1pnQx5wbfPSLzZJ8sfbK-r857MMZAjLmJDg"
+      }
+    },
+    "brave-search": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-brave-search"],
+      "env": {
+        "BRAVE_API_KEY": "BSAn2PIitnRWjTphGqQW-ANCZ6Pwklf"
+      }
+    }
+  }
+}

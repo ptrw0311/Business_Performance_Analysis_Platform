@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>多公司經營績效分析平台</title>
+    
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+    <style>
+        body { font-family: "Segoe UI", "Microsoft JhengHei", sans-serif; background-color: #f4f6f9; margin: 0; padding: 20px; color: #333; }
+        .container { max-width: 1000px; margin: 0 auto; background: white; padding: 40px; border-radius: 12px; box-shadow: 0 5px 15px rgba(0,0,0,0.08); }
+        
+        /* 標題區塊 */
+        .title-box { 
+            background: linear-gradient(135deg, #1565c0 0%, #1e88e5 100%); 
+            color: white; 
+            padding: 15px; 
+            border-radius: 6px; 
+            text-align: center; 
+            margin-bottom: 25px;
+            box-shadow: 0 4px 8px rgba(21, 101, 192, 0.3);
+            position: relative;
+        }
+        .title-box h2 { margin: 0; font-size: 26px; letter-spacing: 2px; font-weight: 700; }
+
+        /* Company Selector */
+        .company-selector-bar {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border: 1px solid #90caf9;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .comp-select {
+            padding: 8px 12px;
+            font-size: 16px;
+            font-weight: bold;
+            border: 2px solid #1565c0;
+            border-radius: 4px;
+            color: #0d47a1;
+            min-width: 200px;
+            cursor: pointer;
+        }
+
+        /* Header Stats */
+        .header-stats { display: flex; justify-content: space-between; margin-bottom: 25px; flex-wrap: wrap; gap: 15px; }
+        .stat-card { 
+            background: #fff; 
+            border: 1px solid #e0e0e0;
+            border-top: 4px solid #1565c0; 
+            padding: 15px; 
+            border-radius: 6px; 
+            text-align: center; 
+            flex: 1; 
+            min-width: 150px; 
+            box-shadow: 0 2px 5px rgba(0,0,0,0.03);
+        }
+        .stat-card h3 { margin: 0 0 10px 0; font-size: 13px; color: #fff; background: #78909c; padding: 4px 10px; border-radius: 15px; display: inline-block; }
+        .stat-card .value { font-size: 24px; font-weight: bold; color: #1565c0; margin-top: 10px;}
+        .stat-unit { font-size: 14px; color: #888; font-weight: normal; margin-left: 2px; }
+
+        /* Insight Annotation */
+        .annotation { 
+            background: #fffbf0; padding: 0; border: 1px solid #ffe0b2; border-left: 6px solid #ff9800; border-radius: 6px; margin-bottom: 25px; color: #444; overflow: hidden;
+        }
+        .insight-header { background: #fff3e0; padding: 12px 20px; border-bottom: 1px solid #ffe0b2; display: flex; justify-content: space-between; align-items: center; }
+        .insight-title { display: flex; align-items: center; gap: 8px; font-size: 16px; font-weight: bold; color: #e65100; }
+        .insight-content { padding: 20px; font-size: 15px; line-height: 1.6; }
+
+        /* Icons & Highlights */
+        .trend-icon { width: 16px; height: 16px; display: inline-block; vertical-align: middle; margin-right: 4px; }
+        .highlight-green { color: #2e7d32; font-weight: bold; background: #e8f5e9; padding: 2px 8px; border-radius: 4px; display: inline-flex; align-items: center; }
+        .highlight-red { color: #c62828; font-weight: bold; background: #ffebee; padding: 2px 8px; border-radius: 4px; display: inline-flex; align-items: center; }
+
+        /* Year Selector */
+        .year-select-container { display:flex; align-items:center; gap:8px; }
+        .year-select { padding: 6px 12px; border: 1px solid #ff9800; border-radius: 4px; font-size: 14px; font-weight: bold; color: #e65100; cursor: pointer; background: white; }
+        .pdf-year-label, .pdf-comp-label { display: none; font-weight: bold; color: #333; font-size: 14px; }
+
+        /* Chart Section */
+        .chart-container { position: relative; height: 520px; width: 100%; margin-bottom: 30px; border: 1px solid #eee; padding: 15px; border-radius: 8px; }
+        .chart-unit-label { position: absolute; top: 15px; right: 20px; font-size: 12px; font-weight: bold; color: #666; background: rgba(255,255,255,0.9); padding: 4px 8px; border-radius: 4px; z-index: 10; border: 1px solid #ddd; }
+
+        /* Control Panel */
+        .control-panel { background: #fafafa; border: 1px solid #ddd; padding: 20px; border-radius: 8px; margin-bottom: 10px; }
+        .panel-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; margin-bottom: 15px; padding-bottom: 10px; }
+        .panel-header h3 { margin: 0; color: #444; font-size: 16px; }
+        
+        .btn-group { display: flex; gap: 10px; }
+        .btn-action { padding: 8px 15px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 13px; color: white; transition: opacity 0.3s; }
+        .btn-action:hover { opacity: 0.8; }
+        .btn-pdf { background-color: #455a64; }
+        .btn-excel-out { background-color: #2e7d32; } 
+        .btn-excel-in { background-color: #1565c0; } 
+        .btn-update { background-color: #e65100; height: 38px; padding: 0 25px;}
+
+        .input-group { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end; }
+        .input-wrapper { display: flex; flex-direction: column; }
+        .input-wrapper label { font-size: 11px; color: #666; margin-bottom: 4px; font-weight: bold; }
+        .input-wrapper input { padding: 10px; border: 1px solid #ccc; border-radius: 4px; width: 100px; }
+    </style>
+</head>
+<body>
+
+<div class="container" id="capture-area">
+    <div class="title-box">
+        <h2>經營績效分析平台</h2>
+    </div>
+
+    <div class="company-selector-bar" data-html2canvas-ignore="true">
+        <label style="font-weight:bold; color:#1565c0;">🏢 選擇分析公司：</label>
+        <select id="companySelector" class="comp-select" onchange="switchCompany()">
+            <option value="博弘雲端">博弘雲端</option>
+        </select>
+    </div>
+    <div id="pdfCompanyHeader" style="display:none; text-align:center; margin-bottom:10px; font-size:18px; font-weight:bold; color:#1565c0;"></div>
+
+    <div class="header-stats">
+        <div class="stat-card">
+            <h3>公司名稱</h3>
+            <div class="value" id="dispCompName" style="font-size: 20px; color:#333; margin-top: 15px;">博弘雲端</div>
+        </div>
+        <div class="stat-card">
+            <h3>5年平均營收</h3>
+            <div class="value" id="avgRev">-- <span class="stat-unit">百萬</span></div>
+        </div>
+        <div class="stat-card">
+            <h3>5年平均淨利</h3>
+            <div class="value" id="avgProfit">-- <span class="stat-unit">百萬</span></div>
+        </div>
+        <div class="stat-card">
+            <h3>5年平均淨利率</h3>
+            <div class="value" id="avgMargin">--</div>
+            <div class="stat-unit" style="font-size:12px;">(總淨利/總營收)</div>
+        </div>
+    </div>
+
+    <div class="annotation">
+        <div class="insight-header">
+            <div class="insight-title">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 2a7 7 0 0 1 7 7c0 2.38-1.19 4.55-3 6v3a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1v-3C6.19 13.55 5 11.38 5 9a7 7 0 0 1 7-7z"></path>
+                    <path d="M9 21h6"></path>
+                </svg>
+                績效洞察 (Performance Insight)
+            </div>
+            <div class="year-select-container">
+                <label style="font-size:13px; color:#666; font-weight:bold;">分析年度：</label>
+                <select id="yearSelector" class="year-select" onchange="handleYearChange()">
+                    </select>
+                <span id="pdfYearLabel" class="pdf-year-label"></span>
+            </div>
+        </div>
+        <div id="summaryText" class="insight-content">
+            系統分析中...
+        </div>
+    </div>
+
+    <div class="chart-container">
+        <div class="chart-unit-label">單位：百萬元</div>
+        <canvas id="financeChart"></canvas>
+    </div>
+
+    <div class="control-panel" data-html2canvas-ignore="true">
+        <div class="panel-header">
+            <h3>🛠️ 數據與檔案管理</h3>
+            <div class="btn-group">
+                <input type="file" id="excelInput" accept=".xlsx, .xls" style="display: none;" onchange="importExcel(this)">
+                <button class="btn-action btn-excel-in" onclick="document.getElementById('excelInput').click()">📥 匯入多公司 Excel</button>
+                <button class="btn-action btn-excel-out" onclick="exportExcel()">📤 匯出所有資料(另存)</button>
+                <button class="btn-action btn-pdf" onclick="exportPDF()">📄 下載 PDF</button>
+            </div>
+        </div>
+        
+        <div class="input-group">
+            <div class="input-wrapper">
+                <label>年份 (Year)</label>
+                <input type="text" id="inYear" placeholder="如: 2026">
+            </div>
+            <div class="input-wrapper">
+                <label>營收 (Revenue)</label>
+                <input type="number" id="inRevenue" placeholder="百萬元">
+            </div>
+            <div class="input-wrapper">
+                <label>稅前淨利 (Profit)</label>
+                <input type="number" id="inProfit" placeholder="百萬元">
+            </div>
+            <button class="btn-action btn-update" onclick="updateChartData()">更新目前公司數據</button>
+        </div>
+        <p style="font-size: 12px; color: #888; margin-top: 10px;">
+            * 匯入 Excel 格式建議：第一欄為「公司名稱」，接著是「年份」、「營收」、「稅前淨利」。<br>
+            * 匯入後，上方的選單會自動出現所有公司。匯出時會將所有公司的最新數據存為一個檔案。
+        </p>
+    </div>
+</div>
+
+<script>
+    Chart.register(ChartDataLabels);
+
+    // --- 1. Multi-Company Database ---
+    // Structure: { "CompanyName": { labels: [], revenue: [], profit: [] }, ... }
+    let companyDB = {
+        "博弘雲端": {
+            labels: ['2021', '2022', '2023', '2024', '2025'],
+            revenue: [3510, 5061, 4749, 4002, 4468],
+            profit: [83, 79, 121, 161, 143]
+        }
+    };
+    
+    let currentCompany = "博弘雲端";
+
+    // Colors
+    const colorRevDefault = 'rgba(233, 196, 200, 0.9)'; 
+    const colorRevDim = 'rgba(233, 196, 200, 0.3)'; 
+    const colorProDefault = '#e67e22'; 
+
+    // Helper: Get Data for Current Company (Recent 5 years)
+    function getCurrentData() {
+        const data = companyDB[currentCompany];
+        return data || { labels: [], revenue: [], profit: [] };
+    }
+
+    function getDisplayData() {
+        const data = getCurrentData();
+        const len = data.labels.length;
+        const count = Math.min(len, 5); 
+        const start = len - count;
+        return {
+            labels: data.labels.slice(start),
+            revenue: data.revenue.slice(start),
+            profit: data.profit.slice(start),
+            fullLabels: data.labels 
+        };
+    }
+
+    function calculateMargins(revArr, proArr) {
+        return revArr.map((rev, i) => ((proArr[i] / rev) * 100).toFixed(0) + '%');
+    }
+
+    // --- Custom Plugin for Bottom Margin Row ---
+    const bottomMarginPlugin = {
+        id: 'bottomMarginPlugin',
+        afterDraw: (chart) => {
+            const ctx = chart.ctx;
+            const xAxis = chart.scales.x;
+            const bottomY = xAxis.bottom + 25;
+
+            ctx.save();
+            ctx.font = 'bold 14px "Microsoft JhengHei"';
+            ctx.fillStyle = '#333';
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'middle';
+
+            // 修改點 2: 淨利率英文靠左一點 (x座標從 10 改為 0)
+            ctx.fillText("淨利率", 0, bottomY - 8);
+            ctx.font = '12px "Arial"';
+            ctx.fillText("(Net profit margin)", 0, bottomY + 8);
+
+            const display = getDisplayData();
+            const margins = calculateMargins(display.revenue, display.profit);
+            
+            ctx.font = 'bold 16px "Arial"';
+            ctx.textAlign = 'center';
+
+            const meta = chart.getDatasetMeta(0);
+            meta.data.forEach((bar, index) => {
+                if (margins[index]) ctx.fillText(margins[index], bar.x, bottomY);
+            });
+            ctx.restore();
+        }
+    };
+
+    // 2. Render Chart
+    const ctx = document.getElementById('financeChart').getContext('2d');
+    let mixedChart = new Chart(ctx, {
+        type: 'bar',
+        plugins: [bottomMarginPlugin],
+        data: {
+            labels: [], 
+            datasets: [{
+                label: '營收', data: [], backgroundColor: [], borderRadius: 0, order: 2,
+                datalabels: { anchor: 'end', align: 'top', color: '#666', font: { weight: 'bold' }, formatter: (v) => v.toLocaleString() }
+            }, {
+                label: '稅前淨利', data: [], type: 'line', borderColor: colorProDefault, borderWidth: 3, 
+                pointBackgroundColor: '#fff', pointBorderColor: colorProDefault, pointRadius: 6, hoverRadius: 8, yAxisID: 'y1', order: 1,
+                datalabels: {
+                    align: 'top', color: '#e67e22', font: { weight: 'bold' }, backgroundColor: 'rgba(255,255,255,0.9)', borderRadius: 4, offset: 4,
+                    // 修改點 1: 圖表長條圖(上方折線)不用出現淨利率百分比，只保留數值
+                    formatter: (value, context) => {
+                        return `${value}`;
+                    }, textAlign: 'center'
+                }
+            }]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            layout: { padding: { top: 30, bottom: 40, left: 10, right: 10 } },
+            onClick: (e, elements) => {
+                if(elements.length > 0) {
+                    const idx = elements[0].index;
+                    const year = mixedChart.data.labels[idx];
+                    document.getElementById('yearSelector').value = year;
+                    handleYearChange();
+                }
+            },
+            onHover: (event, chartElement) => event.native.target.style.cursor = chartElement[0] ? 'pointer' : 'default',
+            scales: {
+                x: { grid: { display: false }, ticks: { color: '#555', font: { size: 14, weight: 'bold' }, padding: 10 } },
+                y: { display: false, beginAtZero: true },
+                y1: { display: false, beginAtZero: true, min: 0 }
+            },
+            plugins: {
+                legend: { display: true, position: 'top', align: 'start' },
+                tooltip: {
+                    callbacks: {
+                        label: (ctx) => `${ctx.dataset.label}: ${ctx.parsed.y.toLocaleString()} 百萬`,
+                        afterLabel: (ctx) => {
+                            const rev = ctx.chart.data.datasets[0].data[ctx.dataIndex];
+                            const pro = ctx.chart.data.datasets[1].data[ctx.dataIndex];
+                            return `淨利率: ${((pro/rev)*100).toFixed(1)}%`;
+                        }
+                    }
+                }
+            }
+        }
+    });
+
+    // Initialize
+    refreshAll();
+
+    // 3. Logic for Company Switching
+    function switchCompany() {
+        const selector = document.getElementById('companySelector');
+        currentCompany = selector.value;
+        refreshAll();
+    }
+
+    function refreshAll() {
+        document.getElementById('dispCompName').innerText = currentCompany;
+        const display = getDisplayData();
+        
+        mixedChart.data.labels = display.labels; 
+        mixedChart.data.datasets[0].data = display.revenue;
+        mixedChart.data.datasets[1].data = display.profit;
+        
+        const maxProfit = Math.max(...display.profit, 10); // avoid 0 issues
+        mixedChart.options.scales.y1.max = maxProfit * 4.5;
+        
+        recalculateStats(display);
+        populateYearSelector(display.fullLabels);
+        
+        // Handle Selector State
+        const selector = document.getElementById('yearSelector');
+        if(!display.labels.includes(selector.value)) {
+            selector.value = display.labels[display.labels.length - 1] || "";
+        }
+        
+        handleYearChange(); 
+    }
+
+    function recalculateStats(data) {
+        if(data.revenue.length === 0) {
+            document.getElementById('avgRev').innerHTML = `--`;
+            document.getElementById('avgProfit').innerHTML = `--`;
+            document.getElementById('avgMargin').innerText = `--`;
+            return;
+        }
+
+        const sumRev = data.revenue.reduce((a, b) => a + b, 0);
+        const sumPro = data.profit.reduce((a, b) => a + b, 0);
+        const count = data.revenue.length;
+
+        const avgRev = Math.round(sumRev / count).toLocaleString();
+        const avgPro = Math.round(sumPro / count).toLocaleString();
+        let avgMar = "0%";
+        if (sumRev > 0) avgMar = ((sumPro / sumRev) * 100).toFixed(0) + '%';
+
+        document.getElementById('avgRev').innerHTML = `${avgRev} <span class="stat-unit">百萬</span>`;
+        document.getElementById('avgProfit').innerHTML = `${avgPro} <span class="stat-unit">百萬</span>`;
+        document.getElementById('avgMargin').innerText = avgMar;
+    }
+
+    function populateYearSelector(allLabels) {
+        const selector = document.getElementById('yearSelector');
+        const currentVal = selector.value;
+        selector.innerHTML = ''; 
+        
+        const display = getDisplayData();
+        [...display.labels].reverse().forEach(year => {
+            const opt = document.createElement('option');
+            opt.value = year;
+            opt.innerText = year + " 年度";
+            selector.appendChild(opt);
+        });
+
+        if(display.labels.includes(currentVal)) selector.value = currentVal;
+    }
+
+    function handleYearChange() {
+        const selectedYear = document.getElementById('yearSelector').value;
+        if(!selectedYear) {
+            document.getElementById('summaryText').innerHTML = "暫無數據";
+            return;
+        }
+        document.getElementById('pdfYearLabel').innerText = selectedYear + " 年度";
+        updateSummaryText(selectedYear);
+        highlightChart(selectedYear);
+    }
+
+    function highlightChart(targetYear) {
+        const display = getDisplayData();
+        const newColors = display.labels.map(year => 
+            year === targetYear ? colorRevDefault : colorRevDim
+        );
+        mixedChart.data.datasets[0].backgroundColor = newColors;
+        mixedChart.update();
+    }
+
+    function updateChartData() {
+        const year = document.getElementById('inYear').value.trim();
+        const rev = parseInt(document.getElementById('inRevenue').value);
+        const pro = parseInt(document.getElementById('inProfit').value);
+
+        if (!year || isNaN(rev) || isNaN(pro)) {
+            alert("請輸入完整數據"); return;
+        }
+
+        const db = companyDB[currentCompany];
+        const idx = db.labels.indexOf(String(year));
+        if (idx !== -1) {
+            db.revenue[idx] = rev;
+            db.profit[idx] = pro;
+        } else {
+            db.labels.push(String(year));
+            db.revenue.push(rev);
+            db.profit.push(pro);
+        }
+        refreshAll();
+        document.getElementById('inYear').value = '';
+        document.getElementById('inRevenue').value = '';
+        document.getElementById('inProfit').value = '';
+    }
+
+    function updateSummaryText(targetYear) {
+        const db = companyDB[currentCompany];
+        const idx = db.labels.indexOf(targetYear);
+        if (idx === -1) return;
+
+        const curRev = db.revenue[idx];
+        const curPro = db.profit[idx];
+        const curMar = (curPro / curRev * 100).toFixed(1);
+
+        const iconUp = `<svg class="trend-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"></line><polyline points="5 12 12 5 19 12"></polyline></svg>`;
+        const iconDown = `<svg class="trend-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><polyline points="19 12 12 19 5 12"></polyline></svg>`;
+
+        let html = '';
+        if (idx === 0) {
+            html += `本期 (${targetYear}) 為基準年度。營收 <strong>${curRev.toLocaleString()}</strong> 百萬，淨利 <strong>${curPro.toLocaleString()}</strong> 百萬。`;
+        } else {
+            const prevRev = db.revenue[idx-1];
+            const prevPro = db.profit[idx-1];
+            const prevMar = (prevPro / prevRev * 100).toFixed(1);
+            const revDiff = curRev - prevRev;
+            const proDiff = curPro - prevPro;
+            const marDiff = (curMar - prevMar).toFixed(1);
+            const rClass = revDiff >= 0 ? 'highlight-green' : 'highlight-red';
+            const rIcon = revDiff >= 0 ? iconUp : iconDown;
+            const rPct = ((revDiff/prevRev)*100).toFixed(1) + '%';
+            const pClass = proDiff >= 0 ? 'highlight-green' : 'highlight-red';
+            const pIcon = proDiff >= 0 ? iconUp : iconDown;
+            const pPct = ((proDiff/Math.abs(prevPro))*100).toFixed(1) + '%';
+
+            let marText = "";
+            if (marDiff > 0) marText = "增加至";
+            else if (marDiff < 0) marText = "減少至";
+            else marText = "持平於";
+
+            html += `
+                <div style="display:grid; grid-template-columns: 100px 1fr; gap:10px; align-items:center; margin-bottom:8px;">
+                    <div style="font-weight:bold; color:#666;">營收分析</div>
+                    <div><span class="${rClass}">${rIcon} ${revDiff>=0?'成長':'下滑'} ${Math.abs(revDiff).toLocaleString()}</span> <span style="font-size:0.9em; color:#888;">(YoY: ${rPct})</span></div>
+                </div>
+                <div style="display:grid; grid-template-columns: 100px 1fr; gap:10px; align-items:center; margin-bottom:8px;">
+                    <div style="font-weight:bold; color:#666;">獲利能力</div>
+                    <div><span class="${pClass}">${pIcon} 淨利${proDiff>=0?'增加':'減少'} ${Math.abs(proDiff).toLocaleString()}</span> <span style="font-size:0.9em; color:#888;">(YoY: ${pPct})</span></div>
+                </div>
+                <div style="display:grid; grid-template-columns: 100px 1fr; gap:10px; align-items:center;">
+                    <div style="font-weight:bold; color:#666;">淨利率</div>
+                    <div>由 ${prevMar}% <strong>${marText} ${curMar}%</strong>。</div>
+                </div>
+            `;
+        }
+        document.getElementById('summaryText').innerHTML = html;
+    }
+
+    // --- PDF Export ---
+    async function exportPDF() {
+        const { jsPDF } = window.jspdf;
+        const element = document.getElementById('capture-area');
+        const btn = document.querySelector('.btn-pdf');
+        const selectBox = document.getElementById('yearSelector');
+        const pdfLabel = document.getElementById('pdfYearLabel');
+        const compHeader = document.getElementById('pdfCompanyHeader');
+
+        // Prepare UI for PDF
+        selectBox.style.display = 'none';
+        pdfLabel.style.display = 'inline';
+        compHeader.innerText = "分析公司：" + currentCompany;
+        compHeader.style.display = 'block'; // Show company name in PDF
+
+        btn.innerText = "⏳ 處理中...";
+        try {
+            await new Promise(r => setTimeout(r, 200)); 
+            const canvas = await html2canvas(element, { scale: 2, backgroundColor: '#ffffff', useCORS: true, logging: false, width: element.offsetWidth, height: element.offsetHeight });
+            const imgData = canvas.toDataURL('image/png');
+            const pdf = new jsPDF('l', 'mm', 'a4'); 
+            const pdfWidth = pdf.internal.pageSize.getWidth();
+            const pdfHeight = pdf.internal.pageSize.getHeight();
+            const margin = 10;
+            
+            const imgRatio = canvas.width / canvas.height;
+            let finalWidth = pdfWidth - (margin * 2);
+            let finalHeight = finalWidth / imgRatio;
+
+            if(finalHeight > (pdfHeight - margin*2)) {
+                finalHeight = pdfHeight - margin*2;
+                finalWidth = finalHeight * imgRatio;
+            }
+            
+            const x = (pdfWidth - finalWidth) / 2;
+            const y = (pdfHeight - finalHeight) / 2;
+            pdf.addImage(imgData, 'PNG', x, y, finalWidth, finalHeight);
+            pdf.save(`${currentCompany}_經營績效分析.pdf`);
+        } catch (error) {
+            alert("匯出失敗");
+        } finally {
+            selectBox.style.display = 'inline-block';
+            pdfLabel.style.display = 'none';
+            compHeader.style.display = 'none';
+            btn.innerText = "📄 下載 PDF";
+        }
+    }
+
+    // --- Excel Functions (Multi-Company) ---
+    function exportExcel() {
+        // 修改點 4: 匯出所有公司資料 (Support Multi-Company Export)
+        let data = [['公司名稱', '年份', '營收', '稅前淨利']];
+        
+        // Iterate through all companies in the DB
+        Object.keys(companyDB).forEach(compName => {
+            const db = companyDB[compName];
+            db.labels.forEach((lbl, i) => {
+                data.push([compName, lbl, db.revenue[i], db.profit[i]]);
+            });
+        });
+
+        const ws = XLSX.utils.aoa_to_sheet(data);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "所有公司績效數據");
+        XLSX.writeFile(wb, `多公司績效數據庫.xlsx`);
+    }
+
+    function importExcel(input) {
+        const file = input.files[0];
+        if(!file) return;
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, {type: 'array'});
+            const jsonData = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], {header: 1});
+            
+            if(jsonData.length < 2) { alert("格式錯誤"); return; }
+            
+            // Expected format: [Company, Year, Revenue, Profit]
+            // We will merge this into companyDB
+            let importCount = 0;
+            let newCompanies = new Set();
+
+            for(let i=1; i<jsonData.length; i++) {
+                const r = jsonData[i];
+                if(r.length >= 4 && r[0]) {
+                    const compName = String(r[0]).trim();
+                    const year = String(r[1]);
+                    const rev = parseInt(r[2]);
+                    const pro = parseInt(r[3]);
+
+                    if(!compName || !year || isNaN(rev) || isNaN(pro)) continue;
+
+                    if(!companyDB[compName]) {
+                        companyDB[compName] = { labels: [], revenue: [], profit: [] };
+                        newCompanies.add(compName);
+                    }
+
+                    // Insert or Update logic
+                    const db = companyDB[compName];
+                    const idx = db.labels.indexOf(year);
+                    if(idx !== -1) {
+                        db.revenue[idx] = rev;
+                        db.profit[idx] = pro;
+                    } else {
+                        db.labels.push(year);
+                        db.revenue.push(rev);
+                        db.profit.push(pro);
+                    }
+                    importCount++;
+                }
+            }
+
+            // Update Dropdown
+            const selector = document.getElementById('companySelector');
+            selector.innerHTML = '';
+            Object.keys(companyDB).forEach(comp => {
+                const opt = document.createElement('option');
+                opt.value = comp;
+                opt.innerText = comp;
+                selector.appendChild(opt);
+            });
+            
+            // If we found new companies, switch to the first one found
+            if(newCompanies.size > 0) {
+                currentCompany = [...newCompanies][0];
+                selector.value = currentCompany;
+            } else {
+                selector.value = currentCompany;
+            }
+
+            refreshAll();
+            alert(`成功匯入 ${importCount} 筆數據，涉及 ${newCompanies.size} 間新公司！`);
+            input.value = '';
+        };
+        reader.readAsArrayBuffer(file);
+    }
+</script>
+
+</body>
+</html>

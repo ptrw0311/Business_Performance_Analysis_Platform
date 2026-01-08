@@ -1,0 +1,433 @@
+/* 全局樣式重置與基礎設定 */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: "Segoe UI", "Microsoft JhengHei", -apple-system, BlinkMacSystemFont, sans-serif;
+  background-color: #f4f6f9;
+  color: #333;
+  line-height: 1.6;
+  min-height: 100vh;
+  padding: 20px;
+}
+
+#root {
+  display: flex;
+  justify-content: center;
+}
+
+/* 主容器 */
+.container {
+  max-width: 1000px;
+  width: 100%;
+  margin: 0 auto;
+  background: white;
+  padding: 40px;
+  border-radius: 12px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+}
+
+/* 標題區塊 */
+.title-box {
+  background: linear-gradient(135deg, #1565c0 0%, #1e88e5 100%);
+  color: white;
+  padding: 15px;
+  border-radius: 6px;
+  text-align: center;
+  margin-bottom: 25px;
+  box-shadow: 0 4px 8px rgba(21, 101, 192, 0.3);
+  position: relative;
+}
+
+.title-box h2 {
+  margin: 0;
+  font-size: 26px;
+  letter-spacing: 2px;
+  font-weight: 700;
+}
+
+/* 公司選擇器 */
+.company-selector-bar {
+  background: #e3f2fd;
+  padding: 15px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  border: 1px solid #90caf9;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  flex-wrap: wrap;
+}
+
+.comp-select {
+  padding: 8px 12px;
+  font-size: 16px;
+  font-weight: bold;
+  border: 2px solid #1565c0;
+  border-radius: 4px;
+  color: #0d47a1;
+  min-width: 200px;
+  cursor: pointer;
+  background: white;
+}
+
+/* 統計卡片區塊 */
+.header-stats {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 25px;
+  flex-wrap: wrap;
+  gap: 15px;
+}
+
+.stat-card {
+  background: #fff;
+  border: 1px solid #e0e0e0;
+  border-top: 4px solid #1565c0;
+  padding: 15px;
+  border-radius: 6px;
+  text-align: center;
+  flex: 1;
+  min-width: 150px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.03);
+}
+
+.stat-card h3 {
+  margin: 0 0 10px 0;
+  font-size: 13px;
+  color: #fff;
+  background: #78909c;
+  padding: 4px 10px;
+  border-radius: 15px;
+  display: inline-block;
+}
+
+.stat-card .value {
+  font-size: 24px;
+  font-weight: bold;
+  color: #1565c0;
+  margin-top: 10px;
+}
+
+.stat-unit {
+  font-size: 14px;
+  color: #888;
+  font-weight: normal;
+  margin-left: 2px;
+}
+
+/* 洞察面板 */
+.annotation {
+  background: #fffbf0;
+  padding: 0;
+  border: 1px solid #ffe0b2;
+  border-left: 6px solid #ff9800;
+  border-radius: 6px;
+  margin-bottom: 25px;
+  color: #444;
+  overflow: hidden;
+}
+
+.insight-header {
+  background: #fff3e0;
+  padding: 12px 20px;
+  border-bottom: 1px solid #ffe0b2;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.insight-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 16px;
+  font-weight: bold;
+  color: #e65100;
+}
+
+.insight-content {
+  padding: 20px;
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+/* 圖示與高亮 */
+.trend-icon {
+  width: 16px;
+  height: 16px;
+  display: inline-block;
+  vertical-align: middle;
+  margin-right: 4px;
+}
+
+.highlight-green {
+  color: #2e7d32;
+  font-weight: bold;
+  background: #e8f5e9;
+  padding: 2px 8px;
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+}
+
+.highlight-red {
+  color: #c62828;
+  font-weight: bold;
+  background: #ffebee;
+  padding: 2px 8px;
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+}
+
+/* 年份選擇器 */
+.year-select-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.year-select {
+  padding: 6px 12px;
+  border: 1px solid #ff9800;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: bold;
+  color: #e65100;
+  cursor: pointer;
+  background: white;
+}
+
+.pdf-year-label,
+.pdf-comp-label {
+  display: none;
+  font-weight: bold;
+  color: #333;
+  font-size: 14px;
+}
+
+/* 圖表區塊 */
+.chart-container {
+  position: relative;
+  height: 520px;
+  width: 100%;
+  margin-bottom: 30px;
+  border: 1px solid #eee;
+  padding: 15px;
+  border-radius: 8px;
+}
+
+.chart-unit-label {
+  position: absolute;
+  top: 15px;
+  right: 20px;
+  font-size: 12px;
+  font-weight: bold;
+  color: #666;
+  background: rgba(255, 255, 255, 0.9);
+  padding: 4px 8px;
+  border-radius: 4px;
+  z-index: 10;
+  border: 1px solid #ddd;
+}
+
+/* 控制面板 */
+.control-panel {
+  background: #fafafa;
+  border: 1px solid #ddd;
+  padding: 20px;
+  border-radius: 8px;
+  margin-bottom: 10px;
+}
+
+.panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #eee;
+  margin-bottom: 15px;
+  padding-bottom: 10px;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.panel-header h3 {
+  margin: 0;
+  color: #444;
+  font-size: 16px;
+}
+
+.btn-group {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.btn-action {
+  padding: 8px 15px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+  font-size: 13px;
+  color: white;
+  transition: opacity 0.3s, transform 0.1s;
+}
+
+.btn-action:hover {
+  opacity: 0.8;
+}
+
+.btn-action:active {
+  transform: scale(0.98);
+}
+
+.btn-pdf {
+  background-color: #455a64;
+}
+
+.btn-excel-out {
+  background-color: #2e7d32;
+}
+
+.btn-excel-in {
+  background-color: #1565c0;
+}
+
+.btn-update {
+  background-color: #e65100;
+  height: 38px;
+  padding: 0 25px;
+}
+
+.input-group {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: flex-end;
+}
+
+.input-wrapper {
+  display: flex;
+  flex-direction: column;
+}
+
+.input-wrapper label {
+  font-size: 11px;
+  color: #666;
+  margin-bottom: 4px;
+  font-weight: bold;
+}
+
+.input-wrapper input {
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  width: 100px;
+  font-size: 14px;
+}
+
+.input-wrapper input:focus {
+  outline: none;
+  border-color: #1565c0;
+  box-shadow: 0 0 0 2px rgba(21, 101, 192, 0.1);
+}
+
+.control-panel p {
+  font-size: 12px;
+  color: #888;
+  margin-top: 10px;
+}
+
+/* PDF 公司標題 */
+#pdfCompanyHeader {
+  display: none;
+  text-align: center;
+  margin-bottom: 10px;
+  font-size: 18px;
+  font-weight: bold;
+  color: #1565c0;
+}
+
+/* 響應式設計 */
+@media (max-width: 768px) {
+  body {
+    padding: 10px;
+  }
+
+  .container {
+    padding: 20px;
+  }
+
+  .header-stats {
+    flex-direction: column;
+  }
+
+  .stat-card {
+    min-width: 100%;
+  }
+
+  .title-box h2 {
+    font-size: 20px;
+  }
+
+  .panel-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .btn-group {
+    width: 100%;
+  }
+
+  .btn-action {
+    flex: 1;
+    min-width: 120px;
+  }
+
+  .chart-container {
+    height: 400px;
+    overflow-x: auto;
+  }
+}
+
+/* 載入狀態 */
+.loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 40px;
+  color: #666;
+}
+
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #1565c0;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-right: 10px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* 錯誤狀態 */
+.error-message {
+  background: #ffebee;
+  color: #c62828;
+  padding: 15px;
+  border-radius: 6px;
+  border-left: 4px solid #c62828;
+  margin: 20px 0;
+}
