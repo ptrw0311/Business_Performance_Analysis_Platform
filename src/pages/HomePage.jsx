@@ -258,10 +258,6 @@ function HomePage() {
         onUpdateData={handleUpdateData}
         onBulkImport={handleBulkImport}
       />
-
-      <div className="author-credit">
-        produced by 聯稽二處
-      </div>
     </div>
   );
 }

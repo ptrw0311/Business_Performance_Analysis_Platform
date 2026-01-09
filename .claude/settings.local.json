@@ -40,7 +40,8 @@
       "WebSearch",
       "Bash(npm uninstall:*)",
       "Bash(timeout:*)",
-      "Bash(cmd.exe /c \"taskkill /F /PID 15712 & taskkill /F /PID 29496 & taskkill /F /PID 30616\")"
+      "Bash(cmd.exe /c \"taskkill /F /PID 15712 & taskkill /F /PID 29496 & taskkill /F /PID 30616\")",
+      "Skill(webapp-testing)"
     ]
   }
 }

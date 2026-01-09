@@ -18,14 +18,14 @@ function FinanceChart({ labels, revenue, profit, selectedYear, onYearChange }) {
     }));
   }, [labels, revenue]);
 
-  // 準備折線圖資料（淨利）- 使用與長條圖相同的年份作為 x
+  // 準備折線圖資料（淨利）
   const lineData = useMemo(() => {
     if (!labels || !profit) return [];
     return [
       {
         id: 'profit',
         data: labels.map((year, index) => ({
-          x: String(year), // 確保是字串格式，與長條圖的 indexBy 一致
+          x: String(year),
           y: profit[index],
         })),
       },
@@ -42,17 +42,12 @@ function FinanceChart({ labels, revenue, profit, selectedYear, onYearChange }) {
   }, [labels, revenue, profit]);
 
   // 計算 Y 軸範圍
-  const maxRevenue = useMemo(() => {
-    if (!revenue || revenue.length === 0) return 100;
-    return Math.max(...revenue);
-  }, [revenue]);
-
   const maxProfit = useMemo(() => {
     if (!profit || profit.length === 0) return 100;
     return Math.max(...profit, 10);
   }, [profit]);
 
-  // 自訂 Tooltip
+  // 自訂 Tooltip - 長條圖
   const BarTooltip = ({ id, value, index, color }) => {
     const year = labels[index];
     const rev = revenue[index];
@@ -81,6 +76,7 @@ function FinanceChart({ labels, revenue, profit, selectedYear, onYearChange }) {
     );
   };
 
+  // 自訂 Tooltip - 折線圖
   const LineTooltip = ({ point }) => {
     const year = point.data.xFormatted || point.data.x;
     const idx = labels.indexOf(year);
@@ -93,9 +89,9 @@ function FinanceChart({ labels, revenue, profit, selectedYear, onYearChange }) {
         style={{
           background: 'white',
           padding: '12px 16px',
-          border: '1px solid #3b82f6',
+          border: '1px solid #e67e22',
           borderRadius: '8px',
-          boxShadow: '0 4px 12px rgba(59, 130, 246, 0.2)',
+          boxShadow: '0 4px 12px rgba(230, 126, 34, 0.3)',
           color: '#0f172a',
           fontSize: '13px',
         }}
@@ -103,7 +99,8 @@ function FinanceChart({ labels, revenue, profit, selectedYear, onYearChange }) {
         <div style={{ fontWeight: 'bold', marginBottom: '6px', fontSize: '14px' }}>
           {year} 年度
         </div>
-        <div style={{ color: '#3b82f6', fontWeight: '600' }}>淨利: {Number(pro).toLocaleString()} 百萬</div>
+        <div style={{ color: '#64748b' }}>營收: <span style={{ color: '#0f172a', fontWeight: '600' }}>{rev.toLocaleString()}</span> 百萬</div>
+        <div style={{ color: '#e67e22', fontWeight: '600' }}>淨利: {Number(pro).toLocaleString()} 百萬</div>
         <div style={{ color: '#64748b', marginTop: '4px' }}>淨利率: <span style={{ color: '#10b981', fontWeight: '600' }}>{margin}%</span></div>
       </div>
     );
@@ -115,6 +112,18 @@ function FinanceChart({ labels, revenue, profit, selectedYear, onYearChange }) {
 
   return (
     <div className="chart-nivo-wrapper">
+      {/* 圖例 */}
+      <div className="chart-legend">
+        <div className="legend-item">
+          <span className="legend-color legend-color-bar"></span>
+          <span className="legend-label">營收</span>
+        </div>
+        <div className="legend-item">
+          <span className="legend-color legend-color-line"></span>
+          <span className="legend-label">淨利</span>
+        </div>
+      </div>
+
       {/* 單位標籤 */}
       <div className="chart-unit-label">單位：百萬元</div>
 
@@ -135,7 +144,7 @@ function FinanceChart({ labels, revenue, profit, selectedYear, onYearChange }) {
             borderRadius={6}
             colors={(bar) => {
               const isSelected = bar.data.year === selectedYear;
-              return isSelected ? '#3b82f6' : '#e2e8f0';
+              return isSelected ? '#3b82f6' : '#94a3b8';
             }}
             borderColor={{
               from: 'color',
@@ -147,13 +156,9 @@ function FinanceChart({ labels, revenue, profit, selectedYear, onYearChange }) {
               tickSize: 0,
               tickPadding: 10,
               tickRotation: 0,
-              legend: '營收',
-              legendPosition: 'middle',
-              legendOffset: -35,
               format: (value) => value.toLocaleString(),
               style: {
                 tick: { fill: '#94a3b8', fontSize: '12px' },
-                legend: { fill: '#64748b', fontSize: '13px', fontWeight: '600' },
               },
             }}
             axisBottom={{
@@ -171,17 +176,14 @@ function FinanceChart({ labels, revenue, profit, selectedYear, onYearChange }) {
               strokeWidth: 1,
               strokeDasharray: '4 4',
             }}
-            labelTextColor={{
-              from: 'color',
-              modifiers: [['darker', 2]],
-            }}
-            labelSkipWidth={12}
-            labelSkipHeight={12}
-            // 顯示數值標籤
+            // 顯示數值標籤（含千分位）
             enableLabel={true}
             labelPosition="top"
+            labelSkipWidth={0}
+            labelSkipHeight={0}
+            label={(d) => d.value.toLocaleString()}
             labelStyle={{
-              fill: '#64748b',
+              fill: '#475569',
               fontSize: '13px',
               fontWeight: '600',
               fontFamily: "'DM Mono', 'Roboto Mono', monospace",
@@ -231,7 +233,8 @@ function FinanceChart({ labels, revenue, profit, selectedYear, onYearChange }) {
             pointBorderWidth={3}
             pointBorderColor="#e67e22"
             enableArea={false}
-            useMesh={false}
+            useMesh={true}
+            meshOpacity={0.1}
             enableCrosshair={false}
             colors={['#e67e22']}
             lineWidth={3}
