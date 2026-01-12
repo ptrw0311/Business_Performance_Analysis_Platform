@@ -135,7 +135,7 @@ function FinanceChart({ labels, revenue, profit, selectedYear, onYearChange }) {
             data={barData}
             keys={['revenue']}
             indexBy="year"
-            margin={{ top: 20, right: 20, bottom: 50, left: 50 }}
+            margin={{ top: 50, right: 20, bottom: 50, left: 50 }}
             padding={0.25}
             layout="vertical"
             valueScale={{ type: 'linear' }}
@@ -158,7 +158,7 @@ function FinanceChart({ labels, revenue, profit, selectedYear, onYearChange }) {
               tickRotation: 0,
               format: (value) => value.toLocaleString(),
               style: {
-                tick: { fill: '#94a3b8', fontSize: '12px' },
+                tick: { fill: '#94a3b8', fontSize: '14px' },
               },
             }}
             axisBottom={{
@@ -166,7 +166,7 @@ function FinanceChart({ labels, revenue, profit, selectedYear, onYearChange }) {
               tickPadding: 12,
               tickRotation: 0,
               style: {
-                tick: { fill: '#475569', fontSize: '14px', fontWeight: '600' },
+                tick: { fill: '#475569', fontSize: '16px', fontWeight: '600' },
               },
             }}
             enableGridY={true}
@@ -176,24 +176,45 @@ function FinanceChart({ labels, revenue, profit, selectedYear, onYearChange }) {
               strokeWidth: 1,
               strokeDasharray: '4 4',
             }}
-            // 顯示數值標籤（含千分位）
-            enableLabel={true}
-            labelPosition="top"
-            labelSkipWidth={0}
-            labelSkipHeight={0}
-            label={(d) => d.value.toLocaleString()}
-            labelStyle={{
-              fill: '#475569',
-              fontSize: '13px',
-              fontWeight: '600',
-              fontFamily: "'DM Mono', 'Roboto Mono', monospace",
-            }}
+            // 隱藏內建標籤（使用自訂 layer 在外部頂端顯示）
+            enableLabel={false}
             animate={true}
             motionConfig="stiff"
             onClick={(node) => {
               onYearChange(node.data.year);
             }}
             tooltip={BarTooltip}
+            layers={[
+              'grid',
+              'axes',
+              'bars',
+              'labels',
+              'legends',
+              // 自訂 layer：在柱狀圖外部頂端顯示營收標籤
+              ({ bars, xScale, yScale }) => {
+                return bars.map((bar) => {
+                  const xPos = bar.x + bar.width / 2;
+                  const yPos = bar.y - 8; // 柱狀圖上方
+                  return (
+                    <text
+                      key={`label-${bar.data.year}`}
+                      x={xPos}
+                      y={yPos}
+                      textAnchor="middle"
+                      dominantBaseline="auto"
+                      style={{
+                        fontSize: '15px',
+                        fontWeight: '600',
+                        fill: '#475569',
+                        fontFamily: "'DM Mono', 'Roboto Mono', monospace",
+                      }}
+                    >
+                      {bar.data.value.toLocaleString()}
+                    </text>
+                  );
+                });
+              },
+            ]}
             theme={{
               tooltip: {
                 container: {
@@ -258,6 +279,29 @@ function FinanceChart({ labels, revenue, profit, selectedYear, onYearChange }) {
               'slices',
               'mesh',
               'legends',
+              // 自訂 layer：顯示淨利數字標籤
+              ({ points, xScale, yScale }) => {
+                return points.map(({ point, data }) => {
+                  const xPos = xScale(data.x);
+                  const yPos = yScale(data.y);
+                  return (
+                    <text
+                      key={`${data.x}-${data.y}-label`}
+                      x={xPos}
+                      y={yPos - 15}
+                      textAnchor="middle"
+                      style={{
+                        fontSize: '14px',
+                        fontWeight: '600',
+                        fill: '#e67e22',
+                        fontFamily: "'DM Mono', 'Roboto Mono', monospace",
+                      }}
+                    >
+                      {data.y.toLocaleString()}
+                    </text>
+                  );
+                });
+              },
             ]}
           />
         </div>
