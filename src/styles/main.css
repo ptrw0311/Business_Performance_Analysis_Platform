@@ -1100,3 +1100,563 @@ select {
     page-break-inside: avoid;
   }
 }
+
+/* ========================================
+   數據表格組件樣式
+   ======================================== */
+.data-table-container {
+  background: var(--bg-primary);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-xl);
+  padding: var(--space-xl);
+  margin-bottom: var(--space-xl);
+}
+
+/* 表格篩選器 */
+.table-filters {
+  display: flex;
+  gap: var(--space-md);
+  margin-bottom: var(--space-lg);
+  flex-wrap: wrap;
+}
+
+.table-filters input {
+  padding: 10px 14px;
+  border: 2px solid var(--border-medium);
+  border-radius: var(--radius-md);
+  font-size: 14px;
+  font-family: var(--font-body);
+  background: var(--bg-primary);
+  color: var(--primary);
+  transition: all var(--transition-base);
+  outline: none;
+  flex: 1;
+  min-width: 200px;
+}
+
+.table-filters input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* 數據表格 */
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: var(--space-lg);
+}
+
+.data-table thead {
+  background: var(--bg-secondary);
+  border-bottom: 2px solid var(--border-medium);
+}
+
+.data-table th {
+  padding: var(--space-md) var(--space-lg);
+  text-align: left;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  user-select: none;
+  transition: background var(--transition-base);
+}
+
+.data-table th:hover {
+  background: var(--bg-tertiary);
+}
+
+.data-table th:last-child {
+  cursor: default;
+}
+
+.data-table tbody tr {
+  border-bottom: 1px solid var(--border-light);
+  transition: background var(--transition-fast);
+}
+
+.data-table tbody tr:hover {
+  background: var(--bg-secondary);
+}
+
+.data-table td {
+  padding: var(--space-md) var(--space-lg);
+  font-size: 14px;
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+}
+
+.data-table td:last-child {
+  font-family: var(--font-body);
+}
+
+/* 表格操作按鈕 */
+.table-action-btn {
+  padding: 6px 12px;
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: 14px;
+  margin-right: var(--space-sm);
+  transition: all var(--transition-base);
+  background: transparent;
+}
+
+.table-action-btn:hover {
+  background: var(--bg-tertiary);
+  transform: scale(1.1);
+}
+
+.table-action-btn.edit:hover {
+  color: var(--accent);
+  background: rgba(59, 130, 246, 0.1);
+}
+
+.table-action-btn.delete:hover {
+  color: var(--danger);
+  background: var(--danger-bg);
+}
+
+/* 表格分頁 */
+.table-pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: var(--space-lg);
+  padding-top: var(--space-lg);
+  border-top: 1px solid var(--border-light);
+}
+
+.table-pagination button {
+  padding: 8px 16px;
+  border: 1px solid var(--border-medium);
+  border-radius: var(--radius-md);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  transition: all var(--transition-base);
+}
+
+.table-pagination button:hover:not(:disabled) {
+  background: var(--accent);
+  color: white;
+  border-color: var(--accent);
+}
+
+.table-pagination button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.table-pagination span {
+  font-size: 13px;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+/* ========================================
+   Modal 組件樣式
+   ======================================== */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(4px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  animation: modalFadeIn 0.2s ease-out;
+}
+
+@keyframes modalFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.modal-container {
+  background: var(--bg-primary);
+  border-radius: var(--radius-2xl);
+  padding: var(--space-3xl);
+  width: 90%;
+  max-width: 500px;
+  box-shadow: var(--shadow-xl);
+  animation: modalSlideUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  border: 1px solid var(--border-light);
+}
+
+@keyframes modalSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.modal-header {
+  margin-bottom: var(--space-xl);
+  text-align: center;
+}
+
+.modal-header h2 {
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--primary);
+  margin: 0;
+}
+
+.modal-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+  margin-bottom: var(--space-2xl);
+}
+
+.modal-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.modal-field label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.modal-field input,
+.modal-field select {
+  padding: 12px 14px;
+  border: 2px solid var(--border-medium);
+  border-radius: var(--radius-lg);
+  font-size: 15px;
+  font-family: var(--font-mono);
+  background: var(--bg-primary);
+  color: var(--primary);
+  transition: all var(--transition-base);
+  outline: none;
+}
+
+.modal-field input:focus,
+.modal-field select:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+}
+
+.modal-field .error {
+  color: var(--danger);
+  font-size: 12px;
+  font-weight: 600;
+  margin-top: 4px;
+}
+
+.modal-footer {
+  display: flex;
+  gap: var(--space-md);
+  justify-content: flex-end;
+}
+
+.modal-btn {
+  padding: 12px 24px;
+  border: none;
+  border-radius: var(--radius-lg);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-base);
+  font-family: var(--font-body);
+}
+
+.modal-btn-cancel {
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+}
+
+.modal-btn-cancel:hover {
+  background: var(--border-medium);
+}
+
+.modal-btn-save {
+  background: var(--accent);
+  color: white;
+}
+
+.modal-btn-save:hover {
+  background: var(--accent-dark);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.modal-btn-save:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* ========================================
+   確認對話框樣式
+   ======================================== */
+.confirm-dialog {
+  max-width: 450px;
+}
+
+.confirm-dialog .modal-header h2 {
+  color: var(--warning);
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-sm);
+}
+
+.confirm-content {
+  background: var(--warning-bg);
+  border: 1px solid var(--warning-light);
+  border-radius: var(--radius-lg);
+  padding: var(--space-lg);
+  margin-bottom: var(--space-lg);
+}
+
+.confirm-content p {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin: 0;
+  line-height: 1.6;
+}
+
+.confirm-content .record-details {
+  margin-top: var(--space-md);
+  padding-top: var(--space-md);
+  border-top: 1px dashed var(--warning-light);
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+
+.confirm-footer {
+  display: flex;
+  gap: var(--space-md);
+  justify-content: center;
+}
+
+.confirm-btn-cancel {
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+}
+
+.confirm-btn-confirm {
+  background: var(--danger);
+  color: white;
+}
+
+.confirm-btn-confirm:hover {
+  background: #dc2626;
+}
+
+/* ========================================
+   Undo Toast 樣式
+   ======================================== */
+.undo-toast {
+  position: fixed;
+  bottom: var(--space-xl);
+  left: 50%;
+  transform: translateX(-50%) translateY(100px);
+  background: var(--primary);
+  color: white;
+  padding: var(--space-lg) var(--space-2xl);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-xl);
+  display: flex;
+  align-items: center;
+  gap: var(--space-lg);
+  z-index: 1100;
+  animation: toastSlideUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes toastSlideUp {
+  to {
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+.undo-toast.toast-exit {
+  animation: toastSlideDown 0.3s ease-in forwards;
+}
+
+@keyframes toastSlideDown {
+  to {
+    transform: translateX(-50%) translateY(100px);
+    opacity: 0;
+  }
+}
+
+.undo-toast-message {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.undo-toast-actions {
+  display: flex;
+  gap: var(--space-md);
+  align-items: center;
+}
+
+.undo-btn {
+  padding: 8px 16px;
+  background: var(--accent);
+  color: white;
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-base);
+}
+
+.undo-btn:hover {
+  background: var(--accent-dark);
+  transform: scale(1.05);
+}
+
+.undo-close {
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.7);
+  cursor: pointer;
+  font-size: 18px;
+  padding: 4px;
+  transition: color var(--transition-base);
+}
+
+.undo-close:hover {
+  color: white;
+}
+
+/* ========================================
+   分頁標籤樣式
+   ======================================== */
+.data-manager-tabs {
+  display: flex;
+  gap: var(--space-md);
+  margin-bottom: var(--space-xl);
+  border-bottom: 2px solid var(--border-light);
+  padding-bottom: var(--space-md);
+}
+
+.tab-button {
+  padding: var(--space-md) var(--space-xl);
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  transition: all var(--transition-base);
+  position: relative;
+}
+
+.tab-button::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--accent);
+  transform: scaleX(0);
+  transition: transform var(--transition-base);
+}
+
+.tab-button:hover {
+  color: var(--accent);
+  background: var(--bg-secondary);
+}
+
+.tab-button.active {
+  color: var(--accent);
+}
+
+.tab-button.active::after {
+  transform: scaleX(1);
+}
+
+.tab-content {
+  animation: tabFadeIn 0.3s ease-out;
+}
+
+@keyframes tabFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ========================================
+   響應式設計 - 數據管理擴展
+   ======================================== */
+@media (max-width: 768px) {
+  .modal-container {
+    width: 95%;
+    padding: var(--space-xl);
+    max-width: none;
+  }
+
+  .data-table {
+    font-size: 12px;
+  }
+
+  .data-table th,
+  .data-table td {
+    padding: var(--space-sm) var(--space-md);
+  }
+
+  .table-filters {
+    flex-direction: column;
+  }
+
+  .table-filters input {
+    min-width: 100%;
+  }
+
+  .table-pagination {
+    flex-direction: column;
+    gap: var(--space-sm);
+  }
+
+  .undo-toast {
+    width: 90%;
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .data-manager-tabs {
+    flex-wrap: wrap;
+  }
+
+  .tab-button {
+    flex: 1;
+    min-width: 120px;
+    text-align: center;
+  }
+}

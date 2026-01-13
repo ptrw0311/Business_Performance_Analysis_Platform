@@ -4,11 +4,17 @@ import StatCards from '../components/StatCards';
 import InsightPanel from '../components/InsightPanel';
 import FinanceChart from '../components/FinanceChart';
 import ControlPanel from '../components/ControlPanel';
+import DataManagerTabs from '../components/DataManagerTabs';
+import DataTable from '../components/DataTable';
+import EditModal from '../components/EditModal';
+import DeleteConfirmDialog from '../components/DeleteConfirmDialog';
+import UndoToast from '../components/UndoToast';
 
 // API 基礎 URL（開發時使用 proxy，生產時直接使用）
 const API_BASE = '/api';
 
 function HomePage() {
+  // 現有狀態
   const [companies, setCompanies] = useState([]);
   const [selectedCompany, setSelectedCompany] = useState('');
   const [financialData, setFinancialData] = useState(null);
@@ -16,9 +22,21 @@ function HomePage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  // 新增狀態 - 數據管理
+  const [allFinancialData, setAllFinancialData] = useState([]);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [modalMode, setModalMode] = useState('create');
+  const [editingRecord, setEditingRecord] = useState(null);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [deletingRecord, setDeletingRecord] = useState(null);
+  const [recentlyDeleted, setRecentlyDeleted] = useState(null);
+  const [undoTimeoutId, setUndoTimeoutId] = useState(null);
+  const [activeTab, setActiveTab] = useState('quick-add');
+
   // 載入公司列表
   useEffect(() => {
     fetchCompanies();
+    fetchAllFinancialData();
   }, []);
 
   // 當選擇公司變更時，載入該公司的財務資料
@@ -27,6 +45,19 @@ function HomePage() {
       fetchFinancialData(selectedCompany);
     }
   }, [selectedCompany]);
+
+  // 取得所有公司所有財務數據
+  const fetchAllFinancialData = async () => {
+    try {
+      const response = await fetch(`${API_BASE}/financial/all`);
+      if (response.ok) {
+        const result = await response.json();
+        setAllFinancialData(result.data || []);
+      }
+    } catch (err) {
+      console.error('載入所有數據失敗:', err);
+    }
+  };
 
   const fetchCompanies = async () => {
     try {
@@ -184,8 +215,9 @@ function HomePage() {
 
         if (response.ok) {
           const result = await response.json();
-          // 重新載入公司列表
+          // 重新載入公司列表和所有數據
           await fetchCompanies();
+          await fetchAllFinancialData();
           // 切換到第一個新公司
           if (result.companies && result.companies.length > 0) {
             setSelectedCompany(result.companies[0]);
@@ -195,6 +227,114 @@ function HomePage() {
         console.error('批量匯入失敗:', err);
         alert('API 連接失敗，使用本地模式');
       }
+    }
+  };
+
+  // 新增 CRUD 方法
+
+  // 開啟新增 Modal
+  const handleCreate = () => {
+    setEditingRecord(null);
+    setModalMode('create');
+    setIsModalOpen(true);
+  };
+
+  // 開啟編輯 Modal
+  const handleEdit = (record) => {
+    setEditingRecord(record);
+    setModalMode('edit');
+    setIsModalOpen(true);
+  };
+
+  // 開啟刪除確認
+  const handleDelete = (record) => {
+    setDeletingRecord(record);
+    setDeleteConfirmOpen(true);
+  };
+
+  // 確認刪除
+  const confirmDelete = async () => {
+    if (!deletingRecord) return;
+
+    try {
+      const response = await fetch(`${API_BASE}/financial/${deletingRecord.company_id}/${deletingRecord.year}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        // 保存到最近刪除 (用於復原)
+        setRecentlyDeleted(deletingRecord);
+
+        // 設置自動消失計時器
+        const timerId = setTimeout(() => {
+          setRecentlyDeleted(null);
+        }, 5000);
+        setUndoTimeoutId(timerId);
+
+        // 重新載入所有數據
+        await fetchAllFinancialData();
+
+        // 如果刪除的是當前選中公司的數據，重新載入該公司數據
+        if (selectedCompany === deletingRecord.company) {
+          await fetchFinancialData(selectedCompany);
+        }
+
+        setDeleteConfirmOpen(false);
+        setDeletingRecord(null);
+      }
+    } catch (err) {
+      console.error('刪除失敗:', err);
+      alert('刪除失敗');
+    }
+  };
+
+  // 復原刪除
+  const undoDelete = async () => {
+    if (!recentlyDeleted) return;
+
+    // 清除計時器
+    if (undoTimeoutId) {
+      clearTimeout(undoTimeoutId);
+    }
+
+    try {
+      await handleSaveData({
+        company: recentlyDeleted.company,
+        year: recentlyDeleted.year,
+        revenue: recentlyDeleted.revenue,
+        profit: recentlyDeleted.profit,
+      });
+      setRecentlyDeleted(null);
+    } catch (err) {
+      alert('復原失敗');
+    }
+  };
+
+  // 儲存新增/編輯數據
+  const handleSaveData = async (data) => {
+    try {
+      const response = await fetch(`${API_BASE}/financial`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+
+      if (response.ok) {
+        // 重新載入所有數據
+        await fetchAllFinancialData();
+
+        // 如果是當前選中公司，重新載入該公司數據
+        if (selectedCompany === data.company) {
+          await fetchFinancialData(data.company);
+        }
+
+        setIsModalOpen(false);
+      } else {
+        throw new Error('儲存失敗');
+      }
+    } catch (err) {
+      console.error('儲存失敗:', err);
+      throw err;
     }
   };
 
@@ -293,11 +433,64 @@ function HomePage() {
         </>
       )}
 
-      <ControlPanel
-        companyName={selectedCompany}
-        onUpdateData={handleUpdateData}
-        onBulkImport={handleBulkImport}
+      {/* 數據管理區塊 */}
+      <DataManagerTabs
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+        tableContent={
+          <div>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '16px' }}>
+              <button className="btn-action btn-excel-in" onClick={handleCreate}>
+                ➕ 新增數據
+              </button>
+            </div>
+            <DataTable
+              data={allFinancialData}
+              onEdit={handleEdit}
+              onDelete={handleDelete}
+            />
+            <ControlPanel
+              companyName={selectedCompany}
+              onUpdateData={handleUpdateData}
+              onBulkImport={handleBulkImport}
+            />
+          </div>
+        }
+        quickAddContent={
+          <ControlPanel
+            companyName={selectedCompany}
+            onUpdateData={handleUpdateData}
+            onBulkImport={handleBulkImport}
+          />
+        }
       />
+
+      {/* Modal 組件 */}
+      <EditModal
+        isOpen={isModalOpen}
+        mode={modalMode}
+        initialValues={editingRecord}
+        companies={companies}
+        onSave={handleSaveData}
+        onClose={() => setIsModalOpen(false)}
+      />
+
+      <DeleteConfirmDialog
+        isOpen={deleteConfirmOpen}
+        record={deletingRecord}
+        onConfirm={confirmDelete}
+        onCancel={() => {
+          setDeleteConfirmOpen(false);
+          setDeletingRecord(null);
+        }}
+      />
+
+      {recentlyDeleted && (
+        <UndoToast
+          message={`✓ 已刪除: ${recentlyDeleted.company} ${recentlyDeleted.year} 年度數據`}
+          onUndo={undoDelete}
+        />
+      )}
     </div>
   );
 }

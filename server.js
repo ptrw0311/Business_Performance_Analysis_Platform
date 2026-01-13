@@ -83,6 +83,36 @@ app.get('/api/companies', async (req, res) => {
   }
 });
 
+// API: 取得所有公司所有財務數據
+app.get('/api/financial/all', async (req, res) => {
+  try {
+    // 先取得所有財務數據
+    const financialResult = await client.execute('SELECT company_id, year, revenue, profit FROM financial_data');
+    // 取得所有公司
+    const companyResult = await client.execute('SELECT id, name FROM companies');
+
+    // 建立公司名稱對照表
+    const companyMap = {};
+    companyResult.rows.forEach(row => {
+      companyMap[row.id] = row.name;
+    });
+
+    // 合併數據
+    const data = financialResult.rows.map(row => ({
+      company_id: row.company_id,
+      company: companyMap[row.company_id] || '未知公司',
+      year: row.year,
+      revenue: row.revenue,
+      profit: row.profit,
+    })).sort((a, b) => a.company.localeCompare(b.company) || b.year - a.year);
+
+    res.json({ data });
+  } catch (error) {
+    console.error('取得所有數據失敗:', error);
+    res.status(500).json({ error: '取得所有數據失敗', message: error.message });
+  }
+});
+
 // API: 取得特定公司財務資料 (使用 query string 避免中文編碼問題)
 app.get('/api/financial/:companyName', async (req, res) => {
   try {
@@ -267,6 +297,69 @@ app.get('/api/export', async (req, res) => {
   } catch (error) {
     console.error('匯出失敗:', error);
     res.status(500).json({ error: '匯出失敗', message: error.message });
+  }
+});
+
+// API: 刪除特定財務數據
+app.delete('/api/financial/:companyId/:year', async (req, res) => {
+  try {
+    const { companyId, year } = req.params;
+
+    // 先取得公司名稱
+    const companyResult = await client.execute({
+      sql: 'SELECT name FROM companies WHERE id = ?',
+      args: [companyId],
+    });
+
+    if (companyResult.rows.length === 0) {
+      return res.status(404).json({ error: '公司不存在' });
+    }
+
+    const companyName = companyResult.rows[0].name;
+
+    // 刪除財務數據
+    await client.execute({
+      sql: 'DELETE FROM financial_data WHERE company_id = ? AND year = ?',
+      args: [companyId, year],
+    });
+
+    res.json({ success: true, company: companyName });
+  } catch (error) {
+    console.error('刪除失敗:', error);
+    res.status(500).json({ error: '刪除失敗', message: error.message });
+  }
+});
+
+// API: 批量刪除
+app.delete('/api/financial/bulk', async (req, res) => {
+  try {
+    const { records } = req.body; // [{ company_id, year }, ...]
+
+    if (!Array.isArray(records) || records.length === 0) {
+      return res.status(400).json({ error: '資料格式錯誤' });
+    }
+
+    let deletedCount = 0;
+
+    for (const record of records) {
+      const { company_id, year } = record;
+
+      if (!company_id || !year) {
+        continue;
+      }
+
+      await client.execute({
+        sql: 'DELETE FROM financial_data WHERE company_id = ? AND year = ?',
+        args: [company_id, year],
+      });
+
+      deletedCount++;
+    }
+
+    res.json({ success: true, deleted: deletedCount });
+  } catch (error) {
+    console.error('批量刪除失敗:', error);
+    res.status(500).json({ error: '批量刪除失敗', message: error.message });
   }
 });
 
