@@ -42,6 +42,10 @@ pipeline {
         ENV_SECRET_ID = 'bussiness-analyze-env' 
     }
 
+    options {
+        skipDefaultCheckout()
+    }
+
     stages {
         stage('Checkout') {
             steps {
@@ -56,7 +60,7 @@ pipeline {
                     $class: 'GitSCM',
                     branches: [[name: "*/${params.BRANCH_TO_BUILD}"]], // Dynamically uses the branch param
                     userRemoteConfigs: [[
-                        url: 'https://github.com/ptrw0311/Business_Performance_Analysis_Platform.git',
+                        url: 'https://github.com/WilliamFenc/Business_Performance_Analysis_Platform.git',
                         credentialsId: 'Willy_Git'
                     ]]
                 ])
