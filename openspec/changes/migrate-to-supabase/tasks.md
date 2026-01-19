@@ -39,5 +39,5 @@
 - [x] 5.5 執行 Playwright E2E 測試（對齊驗證通過）
 
 ## 6. 部署
-- [ ] 6.1 在 Vercel Dashboard 設定 Supabase 環境變數
-- [ ] 6.2 部署至 Vercel 並驗證
+- [x] 6.1 在 Vercel Dashboard 設定 Supabase 環境變數
+- [x] 6.2 部署至 Vercel 並驗證
