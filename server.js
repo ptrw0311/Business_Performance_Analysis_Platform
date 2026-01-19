@@ -2,7 +2,7 @@
 // 使用: node server.js
 import express from 'express';
 import cors from 'cors';
-import { createClient } from '@libsql/client';
+import { createClient } from '@supabase/supabase-js';
 import dotenv from 'dotenv';
 import * as XLSX from 'xlsx';
 
@@ -22,19 +22,48 @@ const PORT = 3000;
 app.use(cors());
 app.use(express.json());
 
-// 取得 Turso 設定
-const TURSO_URL = process.env.TURSO_DATABASE_URL || process.env.VITE_TURSO_DATABASE_URL;
-const TURSO_TOKEN = process.env.TURSO_AUTH_TOKEN || process.env.VITE_TURSO_AUTH_TOKEN;
+// 取得 Supabase 設定
+const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY;
 
-if (!TURSO_URL || !TURSO_TOKEN) {
-  console.error('錯誤: 請設定 TURSO_DATABASE_URL 和 TURSO_AUTH_TOKEN 環境變數');
+if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+  console.error('錯誤: 請設定 SUPABASE_URL 和 SUPABASE_ANON_KEY 環境變數');
   process.exit(1);
 }
 
-// 建立 Turso 客戶端
-const client = createClient({
-  url: TURSO_URL,
-  authToken: TURSO_TOKEN,
+// 建立 Supabase 客戶端
+const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// 單位轉換函式：千元 → 百萬元
+function convertToMillions(valueInThousands) {
+  if (valueInThousands === null || valueInThousands === undefined) {
+    return 0;
+  }
+  const numValue = typeof valueInThousands === 'string'
+    ? parseFloat(valueInThousands)
+    : valueInThousands;
+  return numValue / 1000;
+}
+
+// API: 取得所有公司
+app.get('/api/companies', async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('companies')
+      .select('id, company_name')
+      .order('company_name');
+
+    if (error) throw error;
+
+    const companies = data.map(row => ({
+      id: row.id,
+      name: row.company_name,
+    }));
+    res.json({ companies });
+  } catch (error) {
+    console.error('取得公司列表失敗:', error);
+    res.status(500).json({ error: '取得公司列表失敗', message: error.message });
+  }
 });
 
 // API: 取得特定公司財務資料 (使用 query string 避免中文編碼問題)
@@ -45,25 +74,22 @@ app.get('/api/financial/by-name', async (req, res) => {
       return res.status(400).json({ error: '缺少 company 參數' });
     }
 
-    const result = await client.execute({
-      sql: `
-        SELECT fd.year, fd.revenue, fd.profit
-        FROM financial_data fd
-        JOIN companies c ON c.id = fd.company_id
-        WHERE c.name = ?
-        ORDER BY fd.year
-      `,
-      args: [company],
-    });
+    const { data, error } = await supabase
+      .from('pl_income_basics')
+      .select('fiscal_year, operating_revenue_total, profit_before_tax')
+      .eq('company_name', company)
+      .order('fiscal_year');
+
+    if (error) throw error;
 
     const labels = [];
     const revenue = [];
     const profit = [];
 
-    result.rows.forEach(row => {
-      labels.push(String(row.year));
-      revenue.push(row.revenue);
-      profit.push(row.profit);
+    data.forEach(row => {
+      labels.push(String(row.fiscal_year));
+      revenue.push(convertToMillions(row.operating_revenue_total));
+      profit.push(convertToMillions(row.profit_before_tax));
     });
 
     res.json({
@@ -76,221 +102,89 @@ app.get('/api/financial/by-name', async (req, res) => {
   }
 });
 
-// API: 取得所有公司
-app.get('/api/companies', async (req, res) => {
-  try {
-    const result = await client.execute('SELECT id, name FROM companies ORDER BY name');
-    const companies = result.rows.map(row => ({
-      id: row.id,
-      name: row.name,
-    }));
-    res.json({ companies });
-  } catch (error) {
-    console.error('取得公司列表失敗:', error);
-    res.status(500).json({ error: '取得公司列表失敗', message: error.message });
-  }
-});
-
 // API: 取得所有公司所有財務數據
 app.get('/api/financial/all', async (req, res) => {
   try {
-    // 先取得所有財務數據
-    const financialResult = await client.execute('SELECT company_id, year, revenue, profit FROM financial_data');
-    // 取得所有公司
-    const companyResult = await client.execute('SELECT id, name FROM companies');
+    const { data, error } = await supabase
+      .from('pl_income_basics')
+      .select(`
+        fiscal_year,
+        operating_revenue_total,
+        profit_before_tax,
+        companies!inner (
+          id,
+          company_name
+        )
+      `);
 
-    // 建立公司名稱對照表
-    const companyMap = {};
-    companyResult.rows.forEach(row => {
-      companyMap[row.id] = row.name;
-    });
+    if (error) throw error;
 
-    // 合併數據
-    const data = financialResult.rows.map(row => ({
-      company_id: row.company_id,
-      company: companyMap[row.company_id] || '未知公司',
-      year: row.year,
-      revenue: row.revenue,
-      profit: row.profit,
+    const result = data.map(row => ({
+      company_id: row.companies?.id,
+      company: row.companies?.company_name || '未知公司',
+      year: row.fiscal_year,
+      revenue: convertToMillions(row.operating_revenue_total),
+      profit: convertToMillions(row.profit_before_tax),
     })).sort((a, b) => a.company.localeCompare(b.company) || b.year - a.year);
 
-    res.json({ data });
+    res.json({ data: result });
   } catch (error) {
     console.error('取得所有數據失敗:', error);
     res.status(500).json({ error: '取得所有數據失敗', message: error.message });
   }
 });
 
-// API: 取得特定公司財務資料 (使用 query string 避免中文編碼問題)
-app.get('/api/financial/:companyName', async (req, res) => {
-  try {
-    let companyName;
-    try {
-      companyName = decodeURIComponent(req.params.companyName);
-    } catch {
-      // 如果 decode 失敗，使用原始值
-      companyName = req.params.companyName;
-    }
-
-    const result = await client.execute({
-      sql: `
-        SELECT fd.year, fd.revenue, fd.profit
-        FROM financial_data fd
-        JOIN companies c ON c.id = fd.company_id
-        WHERE c.name = ?
-        ORDER BY fd.year
-      `,
-      args: [companyName],
-    });
-
-    const labels = [];
-    const revenue = [];
-    const profit = [];
-
-    result.rows.forEach(row => {
-      labels.push(String(row.year));
-      revenue.push(row.revenue);
-      profit.push(row.profit);
-    });
-
-    res.json({
-      company: companyName,
-      data: { labels, revenue, profit },
-    });
-  } catch (error) {
-    console.error('取得財務資料失敗:', error);
-    res.status(500).json({ error: '取得財務資料失敗', message: error.message });
-  }
-});
-
-// API: 新增/更新財務資料
+// API: 新增/更新財務資料 (Supabase 模式下已停用)
 app.post('/api/financial', async (req, res) => {
-  try {
-    const { company, year, revenue, profit } = req.body;
-
-    if (!company || !year || revenue === undefined || profit === undefined) {
-      return res.status(400).json({ error: '缺少必要欄位' });
-    }
-
-    // 確保公司存在
-    await client.execute({
-      sql: 'INSERT OR IGNORE INTO companies (name) VALUES (?)',
-      args: [company],
-    });
-
-    // 取得公司 ID
-    const companyResult = await client.execute({
-      sql: 'SELECT id FROM companies WHERE name = ?',
-      args: [company],
-    });
-
-    if (companyResult.rows.length === 0) {
-      return res.status(500).json({ error: '無法建立公司' });
-    }
-
-    const companyId = companyResult.rows[0].id;
-
-    // 新增或更新財務資料
-    await client.execute({
-      sql: `
-        INSERT INTO financial_data (company_id, year, revenue, profit)
-        VALUES (?, ?, ?, ?)
-        ON CONFLICT(company_id, year) DO UPDATE SET
-          revenue = excluded.revenue,
-          profit = excluded.profit
-      `,
-      args: [companyId, year, revenue, profit],
-    });
-
-    res.json({ success: true });
-  } catch (error) {
-    console.error('更新財務資料失敗:', error);
-    res.status(500).json({ error: '更新財務資料失敗', message: error.message });
-  }
+  res.status(403).json({ error: 'Supabase 模式下不支援新增/更新功能，資料庫為唯讀' });
 });
 
-// API: 批量匯入
+// API: 批量匯入 (Supabase 模式下已停用)
 app.post('/api/financial/bulk', async (req, res) => {
-  try {
-    const { data } = req.body;
+  res.status(403).json({ error: 'Supabase 模式下不支援批量匯入功能，資料庫為唯讀' });
+});
 
-    if (!Array.isArray(data) || data.length === 0) {
-      return res.status(400).json({ error: '資料格式錯誤' });
-    }
+// API: 刪除特定財務數據 (Supabase 模式下已停用)
+app.delete('/api/financial/:companyId/:year', async (req, res) => {
+  res.status(403).json({ error: 'Supabase 模式下不支援刪除功能，資料庫為唯讀' });
+});
 
-    const newCompanies = [];
-    let importCount = 0;
-
-    for (const item of data) {
-      const { company, year, revenue, profit } = item;
-
-      if (!company || !year || revenue === undefined || profit === undefined) {
-        continue;
-      }
-
-      // 確保公司存在
-      const existingCompany = await client.execute({
-        sql: 'SELECT id FROM companies WHERE name = ?',
-        args: [company],
-      });
-
-      let companyId;
-      if (existingCompany.rows.length === 0) {
-        await client.execute({
-          sql: 'INSERT INTO companies (name) VALUES (?)',
-          args: [company],
-        });
-        const newCompanyResult = await client.execute({
-          sql: 'SELECT id FROM companies WHERE name = ?',
-          args: [company],
-        });
-        companyId = newCompanyResult.rows[0].id;
-        newCompanies.push(company);
-      } else {
-        companyId = existingCompany.rows[0].id;
-      }
-
-      // 新增或更新財務資料
-      await client.execute({
-        sql: `
-          INSERT INTO financial_data (company_id, year, revenue, profit)
-          VALUES (?, ?, ?, ?)
-          ON CONFLICT(company_id, year) DO UPDATE SET
-            revenue = excluded.revenue,
-            profit = excluded.profit
-        `,
-        args: [companyId, year, revenue, profit],
-      });
-
-      importCount++;
-    }
-
-    res.json({
-      success: true,
-      imported: importCount,
-      companies: newCompanies,
-    });
-  } catch (error) {
-    console.error('批量匯入失敗:', error);
-    res.status(500).json({ error: '批量匯入失敗', message: error.message });
-  }
+// API: 批量刪除 (Supabase 模式下已停用)
+app.delete('/api/financial/bulk', async (req, res) => {
+  res.status(403).json({ error: 'Supabase 模式下不支援刪除功能，資料庫為唯讀' });
 });
 
 // API: 匯出 Excel
 app.get('/api/export', async (req, res) => {
   try {
-    const result = await client.execute({
-      sql: `
-        SELECT c.name as company, fd.year, fd.revenue, fd.profit
-        FROM financial_data fd
-        JOIN companies c ON c.id = fd.company_id
-        ORDER BY c.name, fd.year
-      `,
-    });
+    const { data, error } = await supabase
+      .from('pl_income_basics')
+      .select(`
+        fiscal_year,
+        operating_revenue_total,
+        profit_before_tax,
+        companies!inner (
+          company_name
+        )
+      `)
+      .order('fiscal_year');
+
+    if (error) throw error;
 
     const exportData = [['公司名稱', '年份', '營收', '稅前淨利']];
-    result.rows.forEach(row => {
-      exportData.push([row.company, row.year, row.revenue, row.profit]);
+    data.forEach(row => {
+      exportData.push([
+        row.companies.company_name,
+        row.fiscal_year,
+        convertToMillions(row.operating_revenue_total),
+        convertToMillions(row.profit_before_tax),
+      ]);
+    });
+
+    // 排序
+    exportData.sort((a, b) => {
+      if (a[0] !== b[0]) return a[0].localeCompare(b[0]);
+      return b[1] - a[1];
     });
 
     const ws = XLSX.utils.aoa_to_sheet(exportData);
@@ -308,69 +202,6 @@ app.get('/api/export', async (req, res) => {
   }
 });
 
-// API: 刪除特定財務數據
-app.delete('/api/financial/:companyId/:year', async (req, res) => {
-  try {
-    const { companyId, year } = req.params;
-
-    // 先取得公司名稱
-    const companyResult = await client.execute({
-      sql: 'SELECT name FROM companies WHERE id = ?',
-      args: [companyId],
-    });
-
-    if (companyResult.rows.length === 0) {
-      return res.status(404).json({ error: '公司不存在' });
-    }
-
-    const companyName = companyResult.rows[0].name;
-
-    // 刪除財務數據
-    await client.execute({
-      sql: 'DELETE FROM financial_data WHERE company_id = ? AND year = ?',
-      args: [companyId, year],
-    });
-
-    res.json({ success: true, company: companyName });
-  } catch (error) {
-    console.error('刪除失敗:', error);
-    res.status(500).json({ error: '刪除失敗', message: error.message });
-  }
-});
-
-// API: 批量刪除
-app.delete('/api/financial/bulk', async (req, res) => {
-  try {
-    const { records } = req.body; // [{ company_id, year }, ...]
-
-    if (!Array.isArray(records) || records.length === 0) {
-      return res.status(400).json({ error: '資料格式錯誤' });
-    }
-
-    let deletedCount = 0;
-
-    for (const record of records) {
-      const { company_id, year } = record;
-
-      if (!company_id || !year) {
-        continue;
-      }
-
-      await client.execute({
-        sql: 'DELETE FROM financial_data WHERE company_id = ? AND year = ?',
-        args: [company_id, year],
-      });
-
-      deletedCount++;
-    }
-
-    res.json({ success: true, deleted: deletedCount });
-  } catch (error) {
-    console.error('批量刪除失敗:', error);
-    res.status(500).json({ error: '批量刪除失敗', message: error.message });
-  }
-});
-
 // --- ADDED: Serve Static Files ---
 // Serve the files generated by 'vite build' from the 'dist' folder
 app.use(express.static(path.join(__dirname, 'dist')));
@@ -384,5 +215,5 @@ app.get('*', (req, res) => {
 
 app.listen(PORT, () => {
   console.log(`\n🚀 本地 API Server 運行在 http://localhost:${PORT}`);
-  console.log(`📊 Turso 資料庫: ${TURSO_URL?.split('///')[0]}///...\n`);
+  console.log(`📊 Supabase 資料庫: ${SUPABASE_URL}\n`);
 });

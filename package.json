@@ -15,10 +15,10 @@
     "test": "playwright test"
   },
   "dependencies": {
-    "@libsql/client": "^0.14.0",
     "@nivo/bar": "^0.87.0",
     "@nivo/core": "^0.87.0",
     "@nivo/line": "^0.87.0",
+    "@supabase/supabase-js": "^2.90.1",
     "cors": "^2.8.5",
     "dotenv": "^16.6.1",
     "express": "^4.22.1",

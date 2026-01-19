@@ -1,5 +1,5 @@
 // Vercel Serverless Function: 取得特定公司財務資料 (使用 query string)
-import { getTursoClient, handleOptions, successResponse, errorResponse } from '../_lib.js';
+import { getSupabaseClient, handleOptions, successResponse, errorResponse, convertToMillions } from '../_lib.js';
 
 export async function GET(request) {
   try {
@@ -10,26 +10,26 @@ export async function GET(request) {
       return errorResponse('缺少 company 參數', 400);
     }
 
-    const client = getTursoClient();
-    const result = await client.execute({
-      sql: `
-        SELECT fd.year, fd.revenue, fd.profit
-        FROM financial_data fd
-        JOIN companies c ON c.id = fd.company_id
-        WHERE c.name = ?
-        ORDER BY fd.year
-      `,
-      args: [company],
-    });
+    const supabase = getSupabaseClient();
+
+    const { data, error } = await supabase
+      .from('pl_income_basics')
+      .select('fiscal_year, operating_revenue_total, profit_before_tax')
+      .eq('company_name', company)
+      .order('fiscal_year');
+
+    if (error) {
+      throw error;
+    }
 
     const labels = [];
     const revenue = [];
     const profit = [];
 
-    result.rows.forEach(row => {
-      labels.push(String(row.year));
-      revenue.push(row.revenue);
-      profit.push(row.profit);
+    data.forEach(row => {
+      labels.push(String(row.fiscal_year));
+      revenue.push(convertToMillions(row.operating_revenue_total));
+      profit.push(convertToMillions(row.profit_before_tax));
     });
 
     return successResponse({

@@ -68,7 +68,9 @@ function HomePage() {
         const data = await response.json();
         setCompanies(data.companies || []);
         if (data.companies && data.companies.length > 0) {
-          setSelectedCompany(data.companies[0].name);
+          // 預設選擇「博弘雲端」，如果不存在則選第一個
+          const defaultCompany = data.companies.find(c => c.name === '博弘雲端') || data.companies[0];
+          setSelectedCompany(defaultCompany.name);
         }
       } else {
         throw new Error('無法載入公司列表');

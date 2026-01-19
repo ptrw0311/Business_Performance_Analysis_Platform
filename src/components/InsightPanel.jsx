@@ -64,14 +64,14 @@ function InsightPanel({ labels, revenue, profit, selectedYear, onYearChange }) {
         <div style={{ display: 'grid', gridTemplateColumns: '100px 1fr', gap: '10px', alignItems: 'center', marginBottom: '8px' }}>
           <div style={{ fontWeight: 'bold', color: '#666' }}>營收分析</div>
           <div>
-            <span className={rClass}>{rIcon} {revDiff >= 0 ? '成長' : '下滑'} {Math.abs(revDiff).toLocaleString()} 百萬</span>
+            <span className={rClass}>{rIcon} {revDiff >= 0 ? '成長' : '下滑'} {Math.round(Math.abs(revDiff)).toLocaleString()} 百萬</span>
             <span style={{ fontSize: '0.9em', color: '#888' }}>(YoY: {rPct})</span>
           </div>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: '100px 1fr', gap: '10px', alignItems: 'center', marginBottom: '8px' }}>
           <div style={{ fontWeight: 'bold', color: '#666' }}>獲利能力</div>
           <div>
-            <span className={pClass}>{pIcon} 淨利{proDiff >= 0 ? '增加' : '減少'} {Math.abs(proDiff).toLocaleString()} 百萬</span>
+            <span className={pClass}>{pIcon} 淨利{proDiff >= 0 ? '增加' : '減少'} {Math.round(Math.abs(proDiff)).toLocaleString()} 百萬</span>
             <span style={{ fontSize: '0.9em', color: '#888' }}>(YoY: {pPct})</span>
           </div>
         </div>

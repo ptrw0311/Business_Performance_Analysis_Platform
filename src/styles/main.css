@@ -719,7 +719,7 @@ body::after {
 }
 
 .margin-year {
-  font-size: 12px;
+  font-size: 17px;
   color: var(--text-tertiary);
   margin-bottom: 4px;
   font-weight: 600;
