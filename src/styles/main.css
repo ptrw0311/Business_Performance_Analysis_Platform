@@ -188,9 +188,9 @@ body::after {
    ======================================== */
 .title-box {
   text-align: center;
-  margin-bottom: var(--space-3xl);
+  margin-bottom: var(--space-xl);
   position: relative;
-  padding: var(--space-xl) 0;
+  padding: var(--space-sm) 0;
 }
 
 .title-box::after {
@@ -308,7 +308,7 @@ body::after {
   background: var(--bg-primary);
   border: 1px solid var(--border-light);
   border-radius: var(--radius-xl);
-  padding: var(--space-xl);
+  padding: var(--space-md);
   text-align: center;
   transition: all var(--transition-base);
   position: relative;
@@ -356,24 +356,24 @@ body::after {
 }
 
 .stat-card h3 {
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 700;
   color: var(--text-tertiary);
   text-transform: uppercase;
   letter-spacing: 1px;
-  margin: 0 0 var(--space-md) 0;
+  margin: 0 0 var(--space-sm) 0;
   display: inline-block;
-  padding: 6px 14px;
+  padding: 4px 10px;
   background: var(--bg-tertiary);
   border-radius: var(--radius-full);
 }
 
 .stat-card .value {
   font-family: var(--font-mono);
-  font-size: 36px;
+  font-size: 28px;
   font-weight: 700;
   color: var(--primary);
-  margin-top: var(--space-sm);
+  margin-top: var(--space-xs);
   letter-spacing: -1px;
   line-height: 1;
 }
