@@ -146,38 +146,35 @@ function FinancialDataTable({ company }) {
         <table className="financial-data-table">
           <thead>
             <tr>
-              <th className="metric-name-header">指標名稱</th>
-              {years.map((year) => (
-                <th key={year} className="year-header">{year}</th>
+              <th className="year-header">年度</th>
+              {METRICS.map((metric) => (
+                <th key={metric.key} className="metric-header">
+                  {metric.name}
+                  <span className="metric-unit">({metric.unit})</span>
+                </th>
               ))}
             </tr>
           </thead>
           <tbody>
-            {METRICS.map((metric) => {
-              const values = metricData[metric.key] || [];
-              return (
-                <tr key={metric.key}>
-                  <td className="metric-name">
-                    {metric.name}
-                    <span className="metric-unit">({metric.unit})</span>
-                  </td>
-                  {years.map((year, idx) => {
-                    const value = values[idx];
-                    const formattedValue = formatValue(value, metric.format);
-                    const colorClass = metric.format === 'percent' &&
-                      ['revenueGrowth', 'grossProfitGrowth', 'profitBeforeTaxGrowth'].includes(metric.key)
-                      ? getValueColorClass(value)
-                      : null;
+            {years.map((year, yearIdx) => (
+              <tr key={year}>
+                <td className="year-value">{year}</td>
+                {METRICS.map((metric) => {
+                  const value = (metricData[metric.key] || [])[yearIdx];
+                  const formattedValue = formatValue(value, metric.format);
+                  const colorClass = metric.format === 'percent' &&
+                    ['revenueGrowth', 'grossProfitGrowth', 'profitBeforeTaxGrowth'].includes(metric.key)
+                    ? getValueColorClass(value)
+                    : null;
 
-                    return (
-                      <td key={year} className={`metric-value ${colorClass || ''}`}>
-                        {formattedValue}
-                      </td>
-                    );
-                  })}
-                </tr>
-              );
-            })}
+                  return (
+                    <td key={metric.key} className={`metric-value ${colorClass || ''}`}>
+                      {formattedValue}
+                    </td>
+                  );
+                })}
+              </tr>
+            ))}
           </tbody>
         </table>
       </div>

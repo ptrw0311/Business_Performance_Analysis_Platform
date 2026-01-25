@@ -148,17 +148,17 @@ body::after {
    主容器 - 極簡白卡片設計
    ======================================== */
 .container {
-  max-width: 1200px;
+  max-width: 100%;
   width: 100%;
   margin: 0 auto;
   background: var(--bg-primary);
-  border-radius: var(--radius-2xl);
-  padding: var(--space-3xl);
-  box-shadow: var(--shadow-card);
-  border: 1px solid var(--border-light);
+  border-radius: 0;
+  padding: var(--space-3xl) var(--space-2xl);
+  box-shadow: none;
+  border: none;
   animation: containerFadeIn 0.5s ease-out;
   position: relative;
-  overflow: hidden;
+  overflow: visible;
 }
 
 /* 頂部裝飾線 */
@@ -1726,7 +1726,7 @@ select {
 .financial-data-table {
   width: 100%;
   border-collapse: collapse;
-  min-width: 900px;
+  min-width: 1400px;
 }
 
 .financial-data-table thead {
@@ -1748,17 +1748,17 @@ select {
   white-space: nowrap;
 }
 
-.financial-data-table .metric-name-header {
+.financial-data-table .year-header {
   text-align: left;
   position: sticky;
   left: 0;
   background: var(--bg-tertiary);
   z-index: 11;
-  min-width: 150px;
+  min-width: 80px;
 }
 
-.financial-data-table .year-header {
-  min-width: 80px;
+.financial-data-table .metric-header {
+  min-width: 100px;
 }
 
 .financial-data-table tbody tr {
@@ -1783,7 +1783,7 @@ select {
   white-space: nowrap;
 }
 
-.financial-data-table .metric-name {
+.financial-data-table .year-value {
   text-align: left;
   font-weight: 600;
   color: var(--primary);
@@ -1791,17 +1791,14 @@ select {
   left: 0;
   background: inherit;
   z-index: 1;
-  display: flex;
-  align-items: center;
-  gap: 4px;
 }
 
-.financial-data-table .metric-name-header,
-.financial-data-table .metric-name {
+.financial-data-table thead th.year-header,
+.financial-data-table td.year-value {
   background: var(--bg-tertiary);
 }
 
-.financial-data-table tbody tr:hover .metric-name {
+.financial-data-table tbody tr:hover .year-value {
   background: var(--bg-tertiary);
 }
 
@@ -1809,6 +1806,7 @@ select {
   font-size: 11px;
   color: var(--text-tertiary);
   font-weight: 400;
+  margin-left: 4px;
 }
 
 .metric-value {
@@ -1897,6 +1895,6 @@ select {
   }
 
   .financial-data-table {
-    min-width: 700px;
+    min-width: 1000px;
   }
 }
