@@ -3,6 +3,7 @@ import CompanySelector from '../components/CompanySelector';
 import StatCards from '../components/StatCards';
 import InsightPanel from '../components/InsightPanel';
 import FinanceChart from '../components/FinanceChart';
+import FinancialDataTable from '../components/FinancialDataTable';
 import ControlPanel from '../components/ControlPanel';
 import DataManagerTabs from '../components/DataManagerTabs';
 import DataTable from '../components/DataTable';
@@ -392,6 +393,9 @@ function HomePage() {
             selectedYear={selectedYear}
             onYearChange={handleYearChange}
           />
+
+          {/* 詳細財務數據表 */}
+          <FinancialDataTable company={selectedCompany} />
 
           {/* PDF 專用擷取區域 - 隱藏顯示，僅供 PDF 匯出使用 */}
           <div id="pdf-capture-area" style={{ position: 'absolute', left: '-9999px', top: '0', width: '794px', background: '#ffffff', padding: '40px' }}>
