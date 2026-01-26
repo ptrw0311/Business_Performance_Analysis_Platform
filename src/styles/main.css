@@ -1813,12 +1813,12 @@ select {
   transition: color var(--transition-fast);
 }
 
-.metric-positive {
+.financial-data-table .metric-positive {
   color: var(--success);
   font-weight: 600;
 }
 
-.metric-negative {
+.financial-data-table .metric-negative {
   color: var(--danger);
   font-weight: 600;
 }

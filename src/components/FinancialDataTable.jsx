@@ -4,37 +4,55 @@ import { useState, useEffect, useCallback } from 'react';
 const API_BASE = '/api';
 
 // 指標定義
+// displayFormat: 'percentInt' (整數%), 'ratio' (小數), 'turnoverInt' (整數次), 'percentIntColor' (整數%帶顏色)
 const METRICS = [
-  { key: 'netProfitMargin', name: '淨利率', unit: '%', format: 'percent' },
-  { key: 'grossMargin', name: '毛利率', unit: '%', format: 'percent' },
-  { key: 'roa', name: 'ROA', unit: '%', format: 'percent' },
-  { key: 'currentRatio', name: '流動比率', unit: '%', format: 'percent' },
-  { key: 'quickRatio', name: '速動比率', unit: '%', format: 'percent' },
-  { key: 'debtEquityRatio', name: '負債淨值比', unit: '%', format: 'percent' },
-  { key: 'arTurnover', name: '應收帳款週轉率', unit: '次', format: 'number' },
-  { key: 'inventoryTurnover', name: '存貨周轉率', unit: '次', format: 'number' },
-  { key: 'revenueGrowth', name: '營收成長率', unit: '%', format: 'percent' },
-  { key: 'grossProfitGrowth', name: '毛利成長率', unit: '%', format: 'percent' },
-  { key: 'profitBeforeTaxGrowth', name: '稅前淨利成長率', unit: '%', format: 'percent' },
-  { key: 'sellingExpenseRatio', name: '推銷費用占比', unit: '%', format: 'percent' },
-  { key: 'adminExpenseRatio', name: '管理費用佔比', unit: '%', format: 'percent' },
-  { key: 'rdExpenseRatio', name: '研發費用佔比', unit: '%', format: 'percent' },
+  { key: 'netProfitMargin', name: '淨利率', unit: '', displayFormat: 'percentInt' },
+  { key: 'grossMargin', name: '毛利率', unit: '', displayFormat: 'percentInt' },
+  { key: 'roa', name: 'ROA', unit: '', displayFormat: 'percentInt' },
+  { key: 'currentRatio', name: '流動比率', unit: '', displayFormat: 'ratio' },
+  { key: 'quickRatio', name: '速動比率', unit: '', displayFormat: 'ratio' },
+  { key: 'debtEquityRatio', name: '負債淨值比', unit: '', displayFormat: 'ratio' },
+  { key: 'arTurnover', name: '應收週轉', unit: '次', displayFormat: 'turnoverInt' },
+  { key: 'inventoryTurnover', name: '存貨周轉', unit: '次', displayFormat: 'turnoverInt' },
+  { key: 'revenueGrowth', name: '營收成長率', unit: '', displayFormat: 'percentIntColor' },
+  { key: 'grossProfitGrowth', name: '毛利成長率', unit: '', displayFormat: 'percentInt' },
+  { key: 'profitBeforeTaxGrowth', name: '稅前淨利成長率', unit: '', displayFormat: 'percentInt' },
+  { key: 'sellingExpenseRatio', name: '推銷費用占比', unit: '', displayFormat: 'percentInt' },
+  { key: 'adminExpenseRatio', name: '管理費用佔比', unit: '', displayFormat: 'percentInt' },
+  { key: 'rdExpenseRatio', name: '研發費用佔比', unit: '', displayFormat: 'percentInt' },
 ];
 
 /**
  * 格式化數值
  * @param {number|null} value - 數值
- * @param {string} format - 格式類型 ('percent' | 'number')
+ * @param {string} displayFormat - 格式類型
  * @returns {string} 格式化後的字串
  */
-function formatValue(value, format) {
+function formatValue(value, displayFormat) {
   if (value === null || value === undefined || isNaN(value)) {
     return '-';
   }
-  if (format === 'percent') {
-    return value.toFixed(2);
+
+  switch (displayFormat) {
+    case 'percentInt':
+      // 4捨5入到整數，加上 "%" 符號
+      return Math.round(value) + '%';
+
+    case 'percentIntColor':
+      // 4捲5入到整數，加上 "%" 符號（顏色由 CSS 處理）
+      return Math.round(value) + '%';
+
+    case 'ratio':
+      // 除以100後，4捨5入到小數第2位
+      return (value / 100).toFixed(2);
+
+    case 'turnoverInt':
+      // 4捨5入到整數
+      return Math.round(value).toString();
+
+    default:
+      return value.toFixed(2);
   }
-  return value.toFixed(2);
 }
 
 /**
@@ -135,6 +153,15 @@ function FinancialDataTable({ company }) {
 
   const { years, metrics: metricData } = metrics;
 
+  // 年度倒序（最新到最舊）
+  const sortedYears = [...years].sort((a, b) => b - a);
+
+  // 建立年度索引映射
+  const yearIndexMap = {};
+  sortedYears.forEach((year, idx) => {
+    yearIndexMap[year] = idx;
+  });
+
   return (
     <div className="financial-data-table-container">
       <div className="financial-table-header">
@@ -150,31 +177,35 @@ function FinancialDataTable({ company }) {
               {METRICS.map((metric) => (
                 <th key={metric.key} className="metric-header">
                   {metric.name}
-                  <span className="metric-unit">({metric.unit})</span>
+                  {metric.unit && <span className="metric-unit">({metric.unit})</span>}
                 </th>
               ))}
             </tr>
           </thead>
           <tbody>
-            {years.map((year, yearIdx) => (
-              <tr key={year}>
-                <td className="year-value">{year}</td>
-                {METRICS.map((metric) => {
-                  const value = (metricData[metric.key] || [])[yearIdx];
-                  const formattedValue = formatValue(value, metric.format);
-                  const colorClass = metric.format === 'percent' &&
-                    ['revenueGrowth', 'grossProfitGrowth', 'profitBeforeTaxGrowth'].includes(metric.key)
-                    ? getValueColorClass(value)
-                    : null;
+            {sortedYears.map((year) => {
+              // 找到該年度在原始 years 陣列中的索引
+              const originalYearIdx = years.indexOf(year);
 
-                  return (
-                    <td key={metric.key} className={`metric-value ${colorClass || ''}`}>
-                      {formattedValue}
-                    </td>
-                  );
-                })}
-              </tr>
-            ))}
+              return (
+                <tr key={year}>
+                  <td className="year-value">{year}</td>
+                  {METRICS.map((metric) => {
+                    const value = (metricData[metric.key] || [])[originalYearIdx];
+                    const formattedValue = formatValue(value, metric.displayFormat);
+                    const colorClass = metric.displayFormat === 'percentIntColor'
+                      ? getValueColorClass(value)
+                      : null;
+
+                    return (
+                      <td key={metric.key} className={`metric-value ${colorClass || ''}`}>
+                        {formattedValue}
+                      </td>
+                    );
+                  })}
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
