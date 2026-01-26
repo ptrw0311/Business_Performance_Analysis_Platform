@@ -49,19 +49,15 @@ function SolvencyChart({ metrics }) {
   };
 
   // 負債比折線圖層
-  const DebtLineLayer = ({ bars, xScale, yScale, innerWidth, innerHeight }) => {
+  const DebtLineLayer = ({ bars, xScale, yScale }) => {
     if (!bars || bars.length === 0) return null;
 
     try {
-      // 使用第一個 bar 的位置來計算 x 座標
-      const barWidth = bars[0]?.width || 0;
-      const bandWidth = innerWidth / chartData.length;
-
       const validPoints = chartData
-        .map((d, i) => {
+        .map((d) => {
           if (d.debtRatio === null) return null;
-          // 計算每個資料點的中心 x 座標
-          const x = i * bandWidth + bandWidth / 2;
+          // 使用 xScale 計算正確的 x 座標 (band 中心)
+          const x = xScale(d.year) + xScale.bandwidth() / 2;
           const y = yScale(d.debtRatio);
           return {
             x,
@@ -70,7 +66,7 @@ function SolvencyChart({ metrics }) {
             year: d.year,
           };
         })
-        .filter(p => p !== null && p.y !== undefined && !isNaN(p.y));
+        .filter(p => p !== null && p.y !== undefined && !isNaN(p.y) && p.x !== undefined);
 
       if (validPoints.length < 2) return null;
 
