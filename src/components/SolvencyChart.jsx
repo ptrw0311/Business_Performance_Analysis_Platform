@@ -31,7 +31,8 @@ function SolvencyChart({ metrics }) {
     const maxBar = Math.max(...barValues, 0.1);
     const maxLine = Math.max(...lineValues, 0.1);
     // 確保 Y 軸範圍足夠大，讓所有折線圖點和標籤都能顯示
-    return Math.max(maxBar * 4, maxLine * 2);
+    // 使用 maxLine * 2.5 確保有足夠的上方空間給標籤
+    return Math.max(maxBar * 6, maxLine * 2.5);
   }, [barData]);
 
   // 自訂主題
@@ -131,6 +132,7 @@ function SolvencyChart({ metrics }) {
           type: 'linear',
           min: 0,
           max: maxValue,
+          nice: false,
         }}
         axisLeft={null}
         axisBottom={{
