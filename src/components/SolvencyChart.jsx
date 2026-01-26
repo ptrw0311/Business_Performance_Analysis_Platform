@@ -148,9 +148,9 @@ function SolvencyChart({ metrics }) {
         labelSkipWidth={0}
         labelTextColor="#333"
         labelStyle={{ fontSize: '11px', fontWeight: '600' }}
-        tooltip={({ bar }) => (
+        tooltip={({ id, value, color }) => (
           <div style={{ padding: '8px', background: '#fff', borderRadius: '4px', boxShadow: '0 2px 8px rgba(0,0,0,0.15)' }}>
-            <strong>{bar.data.key}</strong>: {bar.value !== null ? bar.value.toFixed(2) : '-'}
+            <strong>{id}</strong>: {value !== null ? value.toFixed(2) : '-'}
           </div>
         )}
         layers={[
