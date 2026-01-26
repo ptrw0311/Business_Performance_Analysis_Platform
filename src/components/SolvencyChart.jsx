@@ -14,25 +14,24 @@ function SolvencyChart({ metrics }) {
     );
   }
 
-  // 準備長條圖資料
+  // 準備長條圖資料 - 將負債比也加入，讓 Nivo 根據所有資料設定 Y 軸
   const barData = useMemo(() => {
     return metrics.years.map((year, index) => ({
       year: year,
       yearIndex: index,
       '流動比': metrics.currentRatio?.[index] !== null ? metrics.currentRatio[index] / 100 : null,
-      '負債比_original': metrics.debtEquityRatio?.[index] !== null ? metrics.debtEquityRatio[index] / 100 : null,
+      '負債比': metrics.debtEquityRatio?.[index] !== null ? metrics.debtEquityRatio[index] / 100 : null,
     }));
   }, [metrics]);
 
-  // 找出最大值 - 使用較大的係數確保折線圖完整顯示
+  // 找出最大值
   const maxValue = useMemo(() => {
     const barValues = barData.map(d => d['流動比']).filter(v => v !== null && !isNaN(v));
-    const lineValues = barData.map(d => d['負債比_original']).filter(v => v !== null && !isNaN(v));
+    const lineValues = barData.map(d => d['負債比']).filter(v => v !== null && !isNaN(v));
     const maxBar = Math.max(...barValues, 0.1);
     const maxLine = Math.max(...lineValues, 0.1);
     // 確保 Y 軸範圍足夠大，讓所有折線圖點和標籤都能顯示
-    // 使用 maxLine * 2.5 確保有足夠的上方空間給標籤
-    return Math.max(maxBar * 6, maxLine * 2.5);
+    return Math.max(maxBar * 3, maxLine * 1.3);
   }, [barData]);
 
   // 自訂主題
@@ -56,15 +55,15 @@ function SolvencyChart({ metrics }) {
         .map((bar) => {
           const yearIndex = bar.data.index;
           const dataPoint = barData[yearIndex];
-          if (!dataPoint || dataPoint['負債比_original'] === null) return null;
+          if (!dataPoint || dataPoint['負債比'] === null) return null;
 
           const x = bar.x + bar.width / 2;
-          const y = yScale(dataPoint['負債比_original']);
+          const y = yScale(dataPoint['負債比']);
 
           return {
             x,
             y,
-            value: dataPoint['負債比_original'],
+            value: dataPoint['負債比'],
             year: dataPoint.year,
           };
         })
@@ -118,6 +117,27 @@ function SolvencyChart({ metrics }) {
     }
   };
 
+  // 自訂 bar 層，只顯示流動比的長條圖
+  const CustomBarLayer = ({ bars, xScale, yScale }) => {
+    return (
+      <g>
+        {bars
+          .filter(bar => bar.data.key === '流動比')
+          .map((bar) => (
+            <rect
+              key={bar.key}
+              x={bar.x}
+              y={bar.y}
+              width={bar.width}
+              height={bar.height}
+              fill="#10b981"
+              borderRadius={4}
+            />
+          ))}
+      </g>
+    );
+  };
+
   return (
     <div className="chart-container" style={{ height: '320px' }}>
       <div className="chart-header">
@@ -125,7 +145,7 @@ function SolvencyChart({ metrics }) {
       </div>
       <ResponsiveBar
         data={barData}
-        keys={['流動比']}
+        keys={['流動比', '負債比']}  // 兩個都加入，讓 Y 軸根據所有資料設定
         indexBy="year"
         margin={{ top: 60, right: 20, bottom: 60, left: 20 }}
         yScale={{
@@ -142,11 +162,11 @@ function SolvencyChart({ metrics }) {
         }}
         enableGridX={false}
         enableGridY={false}
-        colors={['#10b981']}
+        colors={['#10b981', '#10b981']}  // 負債比的長條圖會被自訂層覆蓋
         borderRadius={4}
         barPadding={0.3}
         theme={customTheme}
-        label={d => d.value !== null && d.value < 10 ? d.value.toFixed(2) : ''}
+        label={d => d.id === '流動比' && d.value !== null && d.value < 10 ? d.value.toFixed(2) : ''}
         labelSkipWidth={0}
         labelTextColor="#333"
         labelStyle={{ fontSize: '11px', fontWeight: '600' }}
@@ -158,7 +178,7 @@ function SolvencyChart({ metrics }) {
         layers={[
           'grid',
           'axes',
-          'bars',
+          CustomBarLayer,  // 使用自訂層只顯示流動比的長條圖
           DebtLineLayer,
           'legends',
         ]}
