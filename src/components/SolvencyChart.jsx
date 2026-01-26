@@ -30,8 +30,9 @@ function SolvencyChart({ metrics }) {
     const lineValues = barData.map(d => d['負債比_original']).filter(v => v !== null && !isNaN(v));
     const maxBar = Math.max(...barValues, 0.1);
     const maxLine = Math.max(...lineValues, 0.1);
-    // 設定 Y 軸範圍為流動比的 4-5 倍，讓折線圖也能顯示在圖表內
-    return Math.max(maxBar * 5, maxLine * 1.1);
+    // Y 軸範圍必須同時涵蓋長條圖和折線圖，並預留上方空間給折線圖標籤
+    // 使用 maxLine * 1.5 確保折線圖和標籤都在範圍內
+    return Math.max(maxBar * 3, maxLine * 1.5);
   }, [barData]);
 
   // 自訂主題
@@ -126,7 +127,7 @@ function SolvencyChart({ metrics }) {
         data={barData}
         keys={['流動比']}
         indexBy="year"
-        margin={{ top: 30, right: 20, bottom: 60, left: 20 }}
+        margin={{ top: 50, right: 20, bottom: 60, left: 20 }}
         yScale={{
           type: 'linear',
           min: 0,
