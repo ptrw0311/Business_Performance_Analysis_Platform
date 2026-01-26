@@ -24,15 +24,14 @@ function SolvencyChart({ metrics }) {
     }));
   }, [metrics]);
 
-  // 找出最大值
+  // 找出最大值 - 使用較大的係數確保折線圖完整顯示
   const maxValue = useMemo(() => {
     const barValues = barData.map(d => d['流動比']).filter(v => v !== null && !isNaN(v));
     const lineValues = barData.map(d => d['負債比_original']).filter(v => v !== null && !isNaN(v));
     const maxBar = Math.max(...barValues, 0.1);
     const maxLine = Math.max(...lineValues, 0.1);
-    // Y 軸範圍必須同時涵蓋長條圖和折線圖，並預留上方空間給折線圖標籤
-    // 使用 maxLine * 1.5 確保折線圖和標籤都在範圍內
-    return Math.max(maxBar * 3, maxLine * 1.5);
+    // 確保 Y 軸範圍足夠大，讓所有折線圖點和標籤都能顯示
+    return Math.max(maxBar * 4, maxLine * 2);
   }, [barData]);
 
   // 自訂主題
@@ -119,7 +118,7 @@ function SolvencyChart({ metrics }) {
   };
 
   return (
-    <div className="chart-container">
+    <div className="chart-container" style={{ height: '320px' }}>
       <div className="chart-header">
         <h4 className="chart-title">償債結構 (Solvency)</h4>
       </div>
@@ -127,7 +126,7 @@ function SolvencyChart({ metrics }) {
         data={barData}
         keys={['流動比']}
         indexBy="year"
-        margin={{ top: 50, right: 20, bottom: 60, left: 20 }}
+        margin={{ top: 60, right: 20, bottom: 60, left: 20 }}
         yScale={{
           type: 'linear',
           min: 0,
