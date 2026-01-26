@@ -118,20 +118,21 @@ function SolvencyChart({ metrics }) {
   };
 
   // 自訂 bar 層，只顯示流動比的長條圖
-  const CustomBarLayer = ({ bars, xScale, yScale }) => {
+  const CustomBarLayer = ({ bars }) => {
     return (
       <g>
         {bars
           .filter(bar => bar.data.key === '流動比')
           .map((bar) => (
             <rect
-              key={bar.key}
+              key={`bar-${bar.data.key}-${bar.data.index}`}
               x={bar.x}
               y={bar.y}
               width={bar.width}
               height={bar.height}
               fill="#10b981"
-              borderRadius={4}
+              rx={4}
+              ry={4}
             />
           ))}
       </g>
