@@ -102,6 +102,165 @@ app.get('/api/financial/by-name', async (req, res) => {
   }
 });
 
+// API: 取得詳細財務指標資料 (給 KPI 和圖表使用)
+app.get('/api/financial/basics', async (req, res) => {
+  try {
+    const company = req.query.company;
+    if (!company) {
+      return res.status(400).json({ error: '缺少 company 參數' });
+    }
+
+    // 同時查詢損益表和資產負債表
+    const [incomeResult, balanceResult] = await Promise.all([
+      supabase
+        .from('pl_income_basics')
+        .select('*')
+        .eq('company_name', company)
+        .order('fiscal_year'),
+      supabase
+        .from('financial_basics')
+        .select('*')
+        .eq('company_name', company)
+        .order('fiscal_year'),
+    ]);
+
+    if (incomeResult.error) throw incomeResult.error;
+    if (balanceResult.error) throw balanceResult.error;
+
+    if (!incomeResult.data || incomeResult.data.length === 0) {
+      return res.status(404).json({ error: '公司資料不存在' });
+    }
+
+    // 計算財務指標
+    const metrics = calculateMetrics(incomeResult.data, balanceResult.data);
+
+    res.json({
+      success: true,
+      data: {
+        company: company,
+        years: metrics.years,
+        metrics: metrics,
+      },
+    });
+  } catch (error) {
+    console.error('取得財務指標失敗:', error);
+    res.status(500).json({ error: '取得財務指標失敗', message: error.message });
+  }
+});
+
+// 計算財務指標的函式
+function calculateMetrics(incomeData, balanceData) {
+  const incomeByYear = {};
+  const balanceByYear = {};
+
+  incomeData.forEach(row => {
+    incomeByYear[row.fiscal_year] = row;
+  });
+
+  balanceData.forEach(row => {
+    balanceByYear[row.fiscal_year] = row;
+  });
+
+  const years = [...new Set([
+    ...incomeData.map(r => r.fiscal_year),
+    ...balanceData.map(r => r.fiscal_year)
+  ])].sort((a, b) => a - b);
+
+  const result = {
+    years: years.map(String),
+    netProfitMargin: [],
+    grossMargin: [],
+    roa: [],
+    currentRatio: [],
+    quickRatio: [],
+    debtEquityRatio: [],
+    arTurnover: [],
+    inventoryTurnover: [],
+    revenueGrowth: [],
+    grossProfitGrowth: [],
+    profitBeforeTaxGrowth: [],
+    sellingExpenseRatio: [],
+    adminExpenseRatio: [],
+    rdExpenseRatio: [],
+  };
+
+  const safeDivide = (numerator, denominator) => {
+    if (denominator === null || denominator === undefined || denominator === 0) return null;
+    if (numerator === null || numerator === undefined) return null;
+    return numerator / denominator;
+  };
+
+  const getPreviousYear = (dataMap, year) => dataMap[year - 1] || null;
+
+  years.forEach((year) => {
+    const income = incomeByYear[year];
+    const balance = balanceByYear[year];
+    const prevIncome = getPreviousYear(incomeByYear, year);
+    const prevBalance = getPreviousYear(balanceByYear, year);
+
+    result.netProfitMargin.push(safeDivide(income?.profit_before_tax, income?.operating_revenue_total) * 100 || null);
+    result.grossMargin.push(safeDivide(income?.gross_profit_loss, income?.operating_revenue_total) * 100 || null);
+
+    if (balance?.total_assets && prevBalance?.total_assets) {
+      const avgAssets = (balance.total_assets + prevBalance.total_assets) / 2;
+      result.roa.push(safeDivide(income?.net_income, avgAssets) * 100 || null);
+    } else {
+      result.roa.push(null);
+    }
+
+    result.currentRatio.push(safeDivide(balance?.total_current_assets, balance?.total_current_liabilities) * 100 || null);
+
+    if (balance?.total_current_assets && balance?.total_current_liabilities) {
+      const quickAssets = (parseFloat(balance.total_current_assets) || 0) -
+        (parseFloat(balance.inventory) || 0) -
+        (parseFloat(balance.prepayments) || 0);
+      result.quickRatio.push(safeDivide(quickAssets, balance.total_current_liabilities) * 100 || null);
+    } else {
+      result.quickRatio.push(null);
+    }
+
+    result.debtEquityRatio.push(safeDivide(balance?.total_liabilities, balance?.total_equity) * 100 || null);
+
+    const currentAR = (parseFloat(balance?.notes_receivable_net) || 0) +
+      (parseFloat(balance?.ar_net) || 0) +
+      (parseFloat(balance?.ar_related_net) || 0);
+    const prevAR = (parseFloat(prevBalance?.notes_receivable_net) || 0) +
+      (parseFloat(prevBalance?.ar_net) || 0) +
+      (parseFloat(prevBalance?.ar_related_net) || 0);
+    const avgAR = (currentAR + prevAR) / 2;
+    result.arTurnover.push(safeDivide(income?.operating_revenue_total, avgAR) || null);
+
+    const currentInventory = parseFloat(balance?.inventory) || 0;
+    const prevInventory = parseFloat(prevBalance?.inventory) || 0;
+    const avgInventory = (currentInventory + prevInventory) / 2;
+    result.inventoryTurnover.push(safeDivide(income?.operating_costs_total, avgInventory) || null);
+
+    if (prevIncome?.operating_revenue_total) {
+      result.revenueGrowth.push((safeDivide(income?.operating_revenue_total, prevIncome.operating_revenue_total) - 1) * 100 || null);
+    } else {
+      result.revenueGrowth.push(null);
+    }
+
+    if (prevIncome?.gross_profit_loss) {
+      result.grossProfitGrowth.push((safeDivide(income?.gross_profit_loss, prevIncome.gross_profit_loss) - 1) * 100 || null);
+    } else {
+      result.grossProfitGrowth.push(null);
+    }
+
+    if (prevIncome?.profit_before_tax) {
+      result.profitBeforeTaxGrowth.push((safeDivide(income?.profit_before_tax, prevIncome.profit_before_tax) - 1) * 100 || null);
+    } else {
+      result.profitBeforeTaxGrowth.push(null);
+    }
+
+    result.sellingExpenseRatio.push(safeDivide(income?.selling_expenses, income?.operating_revenue_total) * 100 || null);
+    result.adminExpenseRatio.push(safeDivide(income?.general_admin_expenses, income?.operating_revenue_total) * 100 || null);
+    result.rdExpenseRatio.push(safeDivide(income?.r_and_d_expenses, income?.operating_revenue_total) * 100 || null);
+  });
+
+  return result;
+}
+
 // API: 取得所有公司所有財務數據
 app.get('/api/financial/all', async (req, res) => {
   try {

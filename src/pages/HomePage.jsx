@@ -3,6 +3,7 @@ import CompanySelector from '../components/CompanySelector';
 import StatCards from '../components/StatCards';
 import InsightPanel from '../components/InsightPanel';
 import FinanceChart from '../components/FinanceChart';
+import KPIAndChartsSection from '../components/KPIAndChartsSection';
 import FinancialDataTable from '../components/FinancialDataTable';
 import ControlPanel from '../components/ControlPanel';
 import DataManagerTabs from '../components/DataManagerTabs';
@@ -393,6 +394,9 @@ function HomePage() {
             selectedYear={selectedYear}
             onYearChange={handleYearChange}
           />
+
+          {/* KPI 和圖表區塊 */}
+          <KPIAndChartsSection company={selectedCompany} />
 
           {/* 詳細財務數據表 */}
           <FinancialDataTable company={selectedCompany} />

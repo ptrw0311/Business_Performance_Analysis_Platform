@@ -61,7 +61,8 @@
       "mcp__brave-search__brave_web_search",
       "mcp__playwright__browser_close",
       "Bash(xcopy:*)",
-      "mcp__playwright__browser_snapshot"
+      "mcp__playwright__browser_snapshot",
+      "Bash(pkill:*)"
     ]
   }
 }
