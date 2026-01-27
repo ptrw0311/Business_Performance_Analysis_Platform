@@ -170,7 +170,7 @@ function SolvencyChart({ metrics }) {
               <strong>流動比</strong>: {value !== null ? value.toFixed(2) : '-'}
             </div>
           )}
-          layers={['grid', 'axes', CustomBarLayer]}
+          layers={['grid', 'axes', CustomLayer]}
         />
       </div>
 
