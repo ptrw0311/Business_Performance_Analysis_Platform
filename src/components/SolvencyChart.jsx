@@ -109,7 +109,6 @@ function SolvencyChart({ metrics }) {
           enableCrosshair={false}
           curve="monotoneX"
           colors={['#f59e0b']}
-          lineWidth={4}
           pointSize={8}
           pointColor="#f59e0b"
           pointBorderWidth={2}
