@@ -44,12 +44,12 @@ function SolvencyChart({ metrics }) {
     if (!bars || bars.length === 0) return null;
 
     try {
-      // 1. 繪製流動比長條圖（綠色）
+      // 1. 繪製流動比長條圖（綠色）- 注意：要檢查 bar.key 而不是 bar.data.key
       const barElements = bars
-        .filter(bar => bar.data.key === 'currentRatio')
+        .filter(bar => bar.key && bar.key.toString().startsWith('currentRatio'))
         .map((bar) => (
           <rect
-            key={`bar-${bar.data.index}`}
+            key={`bar-${bar.index}`}
             x={bar.x}
             y={bar.y}
             width={bar.width}
@@ -66,7 +66,8 @@ function SolvencyChart({ metrics }) {
           if (d.debtRatio === null) return null;
 
           // 使用對應 bar 的位置來計算 x 座標（長條圖中心）
-          const targetBar = bars.find(b => b.data.index === i);
+          // 注意：要使用 bar.index 而不是 bar.data.index
+          const targetBar = bars.find(b => b.index === i);
           if (!targetBar) return null;
 
           const x = targetBar.x + targetBar.width / 2;
