@@ -98,7 +98,7 @@ function ProfitabilityChart({ metrics }) {
   };
 
   return (
-    <div className="chart-container">
+    <div className="chart-container" style={{ height: '320px' }}>
       <div className="chart-header">
         <h4 className="chart-title">獲利能力 (Profitability)</h4>
       </div>

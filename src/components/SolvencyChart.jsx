@@ -125,25 +125,31 @@ function SolvencyChart({ metrics }) {
             'lines',
             'points',
             'mesh',
-            'legends',
-          ]}
-          legends={[
-            {
-              anchor: 'bottom',
-              direction: 'row',
-              justify: 'center',
-              translateX: 0,
-              translateY: 45,
-              itemsSpacing: 20,
-              itemWidth: 60,
-              itemHeight: 20,
-              itemDirection: 'left-to-right',
-              symbolSize: 10,
-              symbolShape: 'circle',
-              data: [
-                { id: '流動比', label: '流動比', color: '#10b981' },
-                { id: '負債比', label: '負債比', color: '#f59e0b' },
-              ],
+            ({ points, xScale, yScale }) => {
+              // 自訂 layer 顯示數值標籤
+              return (
+                <g>
+                  {points.map(point => {
+                    const x = xScale(point.data.x);
+                    const y = yScale(point.data.y);
+                    return (
+                      <g key={point.id}>
+                        <text
+                          x={x}
+                          y={y - 12}
+                          textAnchor="middle"
+                          fill="#d97706"
+                          fontSize={13}
+                          fontWeight="bold"
+                          style={{ textShadow: '0 1px 2px rgba(0,0,0,0.3)' }}
+                        >
+                          {point.data.y !== null ? point.data.y.toFixed(2) : '-'}
+                        </text>
+                      </g>
+                    );
+                  })}
+                </g>
+              );
             },
           ]}
         />
@@ -164,24 +170,6 @@ function SolvencyChart({ metrics }) {
           <div key={d.year}>{d.year}</div>
         ))}
       </div>
-
-      {/* 左側 Y 軸 - 流動比 */}
-      <svg style={{ position: 'absolute', left: 10, top: 60, bottom: 60, width: 30, height: 'auto' }}>
-        <text x={5} y={20} fontSize={10} fill="#10b981" fontWeight="bold">流動比</text>
-        <line x1={15} y1={40} x2={15} y2={200} stroke="#10b981" strokeWidth={1} />
-        <text x={10} y={55} fontSize={10} fill="#64748b" textAnchor="end">{maxCurrentRatio.toFixed(1)}</text>
-        <text x={10} y={125} fontSize={10} fill="#64748b" textAnchor="end">{(maxCurrentRatio / 2).toFixed(1)}</text>
-        <text x={10} y={200} fontSize={10} fill="#64748b" textAnchor="end">0</text>
-      </svg>
-
-      {/* 右側 Y 軸 - 負債比 */}
-      <svg style={{ position: 'absolute', right: 10, top: 60, bottom: 60, width: 30, height: 'auto' }}>
-        <text x={5} y={20} fontSize={10} fill="#f59e0b" fontWeight="bold">負債比</text>
-        <line x1={5} y1={40} x2={5} y2={200} stroke="#f59e0b" strokeWidth={1} />
-        <text x={10} y={55} fontSize={10} fill="#64748b">{maxDebtRatio.toFixed(1)}</text>
-        <text x={10} y={125} fontSize={10} fill="#64748b">{(maxDebtRatio / 2).toFixed(1)}</text>
-        <text x={10} y={200} fontSize={10} fill="#64748b">0</text>
-      </svg>
 
       {/* 圖例 */}
       <div style={{
