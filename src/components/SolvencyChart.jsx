@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { ResponsiveBar } from '@nivo/bar';
+import { scaleLinear as d3ScaleLinear } from 'd3-scale';
 
 /**
  * 償債結構圖表 (Solvency)
@@ -44,34 +45,58 @@ function SolvencyChart({ metrics }) {
     if (!bars || bars.length === 0) return null;
 
     try {
-      // 1. 繪製流動比長條圖（綠色）- 注意：要檢查 bar.key 而不是 bar.data.key
+      // 創建折線圖專用的 Y 軸 scale（基於 maxDebtRatio）
+      const debtRatioScale = d3ScaleLinear()
+        .range([innerHeight, 0])  // Y 軸從下到上
+        .domain([0, maxDebtRatio]);
+
+      // 1. 繪製流動比長條圖（綠色）
       const barElements = bars
         .filter(bar => bar.key && bar.key.toString().startsWith('currentRatio'))
-        .map((bar) => (
-          <rect
-            key={`bar-${bar.index}`}
-            x={bar.x}
-            y={bar.y}
-            width={bar.width}
-            height={bar.height}
-            fill="#10b981"
-            rx={4}
-            ry={4}
-          />
-        ));
+        .map((bar) => {
+          // 添加長條圖數值標籤
+          const dataValue = chartData[bar.index]?.currentRatio;
+          return (
+            <g key={`bar-group-${bar.index}`}>
+              <rect
+                x={bar.x}
+                y={bar.y}
+                width={bar.width}
+                height={bar.height}
+                fill="#10b981"
+                rx={4}
+                ry={4}
+              />
+              {/* 長條圖數值標籤 */}
+              {dataValue !== null && dataValue !== undefined && (
+                <text
+                  x={bar.x + bar.width / 2}
+                  y={bar.y + bar.height / 2 + 4}
+                  textAnchor="middle"
+                  fill="#000"
+                  fontSize={11}
+                  fontWeight="bold"
+                >
+                  {dataValue.toFixed(2)}
+                </text>
+              )}
+            </g>
+          );
+        });
 
       // 2. 繪製負債比折線圖（橙色），對齊到長條圖中心
+      // 使用 debtRatioScale 來計算 Y 座標
       const linePoints = chartData
         .map((d, i) => {
           if (d.debtRatio === null) return null;
 
           // 使用對應 bar 的位置來計算 x 座標（長條圖中心）
-          // 注意：要使用 bar.index 而不是 bar.data.index
           const targetBar = bars.find(b => b.index === i);
           if (!targetBar) return null;
 
           const x = targetBar.x + targetBar.width / 2;
-          const y = yScale(d.debtRatio);
+          // 使用 debtRatioScale 而不是 yScale
+          const y = debtRatioScale(d.debtRatio);
 
           return {
             x,
@@ -82,7 +107,8 @@ function SolvencyChart({ metrics }) {
         })
         .filter(p => p !== null && p.y !== undefined && !isNaN(p.y) && p.x !== undefined);
 
-      if (linePoints.length < 2) {
+      // 如果沒有足夠的折線圖點，只返回長條圖
+      if (linePoints.length < 1) {
         return <g>{barElements}</g>;
       }
 
@@ -104,7 +130,7 @@ function SolvencyChart({ metrics }) {
             style={{ mixBlendMode: 'multiply' }}
           />
           {linePoints.map((p) => (
-            <g key={p.year}>
+            <g key={`line-point-${p.year}`}>
               <circle
                 cx={p.x}
                 cy={p.y}
@@ -162,10 +188,6 @@ function SolvencyChart({ metrics }) {
           colors={['#10b981']}
           borderRadius={4}
           barPadding={0.3}
-          label={d => d.value !== null && d.value < 10 ? d.value.toFixed(2) : ''}
-          labelSkipWidth={0}
-          labelTextColor="#333"
-          labelStyle={{ fontSize: '11px', fontWeight: '600' }}
           tooltip={({ id, value }) => (
             <div style={{ padding: '8px', background: '#fff', borderRadius: '4px', boxShadow: '0 2px 8px rgba(0,0,0,0.15)' }}>
               <strong>流動比</strong>: {value !== null ? value.toFixed(2) : '-'}
