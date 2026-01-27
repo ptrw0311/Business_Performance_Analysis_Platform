@@ -1,6 +1,5 @@
 import { useMemo } from 'react';
 import { ResponsiveBar } from '@nivo/bar';
-import { ResponsiveLine } from '@nivo/line';
 
 /**
  * 償債結構圖表 (Solvency)
@@ -20,6 +19,7 @@ function SolvencyChart({ metrics }) {
   const chartData = useMemo(() => {
     return metrics.years.map((year, index) => ({
       year: year,
+      yearIndex: index,
       // 流動比用長條圖顯示
       currentRatio: metrics.currentRatio?.[index] !== null ? metrics.currentRatio[index] / 100 : null,
       // 負債比用折線圖顯示
@@ -39,16 +39,101 @@ function SolvencyChart({ metrics }) {
     return Math.max(...values, 0.1) * 1.2;
   }, [chartData]);
 
-  // 折線圖資料格式
-  const lineData = useMemo(() => {
-    return [{
-      id: '負債比',
-      data: chartData.map(d => ({
-        x: d.year,
-        y: d.debtRatio,
-      })),
-    }];
-  }, [chartData]);
+  // 自訂 layer - 繪製長條圖和折線圖
+  const CustomLayer = ({ bars, xScale, yScale, innerHeight, innerWidth }) => {
+    if (!bars || bars.length === 0) return null;
+
+    try {
+      // 1. 繪製流動比長條圖（綠色）
+      const barElements = bars
+        .filter(bar => bar.data.key === 'currentRatio')
+        .map((bar) => (
+          <rect
+            key={`bar-${bar.data.index}`}
+            x={bar.x}
+            y={bar.y}
+            width={bar.width}
+            height={bar.height}
+            fill="#10b981"
+            rx={4}
+            ry={4}
+          />
+        ));
+
+      // 2. 繪製負債比折線圖（橙色），對齊到長條圖中心
+      const linePoints = chartData
+        .map((d, i) => {
+          if (d.debtRatio === null) return null;
+
+          // 使用對應 bar 的位置來計算 x 座標（長條圖中心）
+          const targetBar = bars.find(b => b.data.index === i);
+          if (!targetBar) return null;
+
+          const x = targetBar.x + targetBar.width / 2;
+          const y = yScale(d.debtRatio);
+
+          return {
+            x,
+            y,
+            value: d.debtRatio,
+            year: d.year,
+          };
+        })
+        .filter(p => p !== null && p.y !== undefined && !isNaN(p.y) && p.x !== undefined);
+
+      if (linePoints.length < 2) {
+        return <g>{barElements}</g>;
+      }
+
+      // 生成折線路徑
+      const pathD = linePoints
+        .map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x},${p.y}`)
+        .join(' ');
+
+      // 3. 折線圖元素
+      const lineElements = (
+        <g style={{ pointerEvents: 'none' }}>
+          <path
+            d={pathD}
+            fill="none"
+            stroke="#f59e0b"
+            strokeWidth={2}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            style={{ mixBlendMode: 'multiply' }}
+          />
+          {linePoints.map((p) => (
+            <g key={p.year}>
+              <circle
+                cx={p.x}
+                cy={p.y}
+                r={5}
+                fill="#f59e0b"
+                stroke="#fff"
+                strokeWidth={2}
+              />
+              <text
+                x={p.x}
+                y={p.y - 10}
+                textAnchor="middle"
+                fill="#d97706"
+                fontSize={12}
+                fontWeight="bold"
+                style={{ textShadow: '0 1px 2px rgba(0,0,0,0.3)' }}
+              >
+                {p.value.toFixed(2)}
+              </text>
+            </g>
+          ))}
+        </g>
+      );
+
+      return <g>{barElements}{lineElements}</g>;
+    } catch (error) {
+      console.error('CustomLayer error:', error);
+      return null;
+    }
+  };
 
   return (
     <div className="chart-container" style={{ height: '320px', position: 'relative' }}>
@@ -56,11 +141,11 @@ function SolvencyChart({ metrics }) {
         <h4 className="chart-title">償債結構 (Solvency)</h4>
       </div>
 
-      {/* 長條圖層 - 流動比 */}
+      {/* 使用統一的 ResponsiveBar */}
       <div style={{ position: 'absolute', top: 60, left: 20, right: 40, bottom: 60 }}>
         <ResponsiveBar
           data={chartData}
-          keys={['currentRatio']}
+          keys={['currentRatio']}  // 只用流動比來生成 bars
           indexBy="year"
           margin={{ top: 0, right: 0, bottom: 0, left: 0 }}
           yScale={{
@@ -85,72 +170,7 @@ function SolvencyChart({ metrics }) {
               <strong>流動比</strong>: {value !== null ? value.toFixed(2) : '-'}
             </div>
           )}
-          layers={['bars']}
-        />
-      </div>
-
-      {/* 折線圖層 - 負債比 */}
-      <div style={{ position: 'absolute', top: 60, left: 20, right: 40, bottom: 60 }}>
-        <ResponsiveLine
-          data={lineData}
-          margin={{ top: 0, right: 0, bottom: 0, left: 0 }}
-          xScale={{ type: 'point' }}
-          yScale={{
-            type: 'linear',
-            min: 0,
-            max: maxDebtRatio,
-          }}
-          axisLeft={null}
-          axisRight={null}
-          axisBottom={null}
-          enableGridX={false}
-          enableGridY={false}
-          useMesh={true}
-          enableCrosshair={false}
-          curve="monotoneX"
-          colors={['#f59e0b']}
-          pointSize={8}
-          pointColor="#f59e0b"
-          pointBorderWidth={2}
-          pointBorderColor="#fff"
-          tooltip={({ point }) => (
-            <div style={{ padding: '8px', background: '#fff', borderRadius: '4px', boxShadow: '0 2px 8px rgba(0,0,0,0.15)' }}>
-              <strong>負債比</strong>: {point.data.y !== null ? point.data.y.toFixed(2) : '-'}
-            </div>
-          )}
-          layers={[
-            'grid',
-            'axes',
-            'lines',
-            'points',
-            'mesh',
-            ({ points, xScale, yScale }) => {
-              // 自訂 layer 顯示數值標籤
-              return (
-                <g>
-                  {points.map(point => {
-                    const x = xScale(point.data.x);
-                    const y = yScale(point.data.y);
-                    return (
-                      <g key={point.id}>
-                        <text
-                          x={x}
-                          y={y - 12}
-                          textAnchor="middle"
-                          fill="#d97706"
-                          fontSize={13}
-                          fontWeight="bold"
-                          style={{ textShadow: '0 1px 2px rgba(0,0,0,0.3)' }}
-                        >
-                          {point.data.y !== null ? point.data.y.toFixed(2) : '-'}
-                        </text>
-                      </g>
-                    );
-                  })}
-                </g>
-              );
-            },
-          ]}
+          layers={['grid', 'axes', CustomBarLayer]}
         />
       </div>
 
