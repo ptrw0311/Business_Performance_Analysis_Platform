@@ -190,7 +190,11 @@ body::after {
   text-align: center;
   margin-bottom: var(--space-xl);
   position: relative;
-  padding: var(--space-sm) 0;
+  padding: var(--space-xs) 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 15px;
 }
 
 .title-box::after {
@@ -205,6 +209,12 @@ body::after {
   border-radius: var(--radius-full);
 }
 
+.title-box .title-logo {
+  width: 35px;
+  height: 35px;
+  object-fit: contain;
+}
+
 .title-box h2 {
   font-family: var(--font-display);
   font-size: 32px;
@@ -217,6 +227,11 @@ body::after {
   -webkit-text-fill-color: transparent;
   background-clip: text;
   animation: titleSlideDown 0.6s ease-out;
+}
+
+.title-box .english-text {
+  font-size: 24px;
+  font-weight: 600;
 }
 
 @keyframes titleSlideDown {

@@ -11,6 +11,7 @@ import DataTable from '../components/DataTable';
 import EditModal from '../components/EditModal';
 import DeleteConfirmDialog from '../components/DeleteConfirmDialog';
 import UndoToast from '../components/UndoToast';
+import robotLogo from '../assets/robot.png';
 
 // API 基礎 URL（開發時使用 proxy，生產時直接使用）
 const API_BASE = '/api';
@@ -358,7 +359,8 @@ function HomePage() {
   return (
     <div className="container" id="capture-area">
       <div className="title-box">
-        <h2>經營績效分析平台</h2>
+        <img src={robotLogo} alt="FinRobot" className="title-logo" />
+        <h2>財務機器人 <span className="english-text">Financial Robot</span></h2>
       </div>
 
       <CompanySelector
