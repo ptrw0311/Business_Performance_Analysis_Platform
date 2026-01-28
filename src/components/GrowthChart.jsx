@@ -73,7 +73,7 @@ function GrowthChart({ metrics }) {
   };
 
   return (
-    <div className="chart-container">
+    <div className="chart-container" style={{ height: '320px' }}>
       <div className="chart-header">
         <h4 className="chart-title">成長動能 (Growth)</h4>
       </div>
@@ -95,8 +95,8 @@ function GrowthChart({ metrics }) {
         enableGridX={false}
         enableGridY={false}
         isInteractive={false}
-        layers={['grid', 'axes', 'areas', 'lines', 'points', 'slices', 'legends', 'PointLabelsLayer']}
-        margin={{ top: 40, right: 30, bottom: 70, left: 30 }}
+        layers={['grid', 'axes', 'areas', 'lines', 'points', 'slices', 'legends', PointLabelsLayer]}
+        margin={{ top: 30, right: 20, bottom: 60, left: 20 }}
         legends={[
           {
             anchor: 'bottom',

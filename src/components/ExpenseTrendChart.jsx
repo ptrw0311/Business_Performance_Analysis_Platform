@@ -6,6 +6,36 @@ import { transformMetricsToNivoData, getChartColors, getCommonChartConfig, forma
  * 費用率趨勢圖表 (Expense Trend)
  * 顯示推銷費用、管理費用、研發費用佔比的趨勢
  */
+
+// 自訂 Layer - 在折線端點顯示數值
+const PointLabelsLayer = ({ points }) => {
+  try {
+    return (
+      <g style={{ pointerEvents: 'none' }}>
+        {points.map((point) => {
+          const value = point.data?.y;
+          if (value === null || value === undefined) return null;
+          return (
+            <text
+              key={point.id}
+              x={point.x}
+              y={point.y - 8}
+              textAnchor="middle"
+              fill="#333"
+              fontSize={9}
+              fontWeight="600"
+            >
+              {formatValue(value, 1)}%
+            </text>
+          );
+        })}
+      </g>
+    );
+  } catch (error) {
+    console.error('PointLabelsLayer error:', error);
+    return null;
+  }
+};
 function ExpenseTrendChart({ metrics }) {
   if (!metrics || !metrics.years || metrics.years.length === 0) {
     return (
@@ -36,7 +66,7 @@ function ExpenseTrendChart({ metrics }) {
   const commonConfig = useMemo(() => getCommonChartConfig(), []);
 
   return (
-    <div className="chart-container">
+    <div className="chart-container" style={{ height: '320px' }}>
       <div className="chart-header">
         <h4 className="chart-title">費用率趨勢 (Expense Trend)</h4>
       </div>
@@ -47,10 +77,10 @@ function ExpenseTrendChart({ metrics }) {
           min: 0,
           max: 'auto',
         }}
-        margin={{ top: 40, right: 30, bottom: 90, left: 30 }}
+        margin={{ top: 30, right: 20, bottom: 60, left: 20 }}
         axisBottom={commonConfig.axisBottom}
         axisLeft={null}
-        yFormat=">-.0f"
+        yFormat=">-.1f"
         curve="monotoneX"
         colors={colors}
         pointSize={6}
@@ -59,16 +89,8 @@ function ExpenseTrendChart({ metrics }) {
         enableArea={false}
         enableGridX={false}
         enableGridY={false}
-        useMesh={true}
-        enableCrosshair={true}
-        crosshairType="bottom"
-        layers={['grid', 'axes', 'areas', 'lines', 'points', 'slices', 'mesh', 'legends']}
-        tooltip={({
-          point }) => (
-          <div style={{ color: 'inherit', fontSize: '12px' }}>
-            <strong>{point.serieId}</strong>: {formatValue(point.data.y)}%
-          </div>
-        )}
+        isInteractive={false}
+        layers={['grid', 'axes', 'areas', 'lines', 'points', 'slices', 'legends', PointLabelsLayer]}
         legends={[
           {
             anchor: 'bottom',
