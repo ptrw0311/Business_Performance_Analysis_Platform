@@ -77,7 +77,7 @@ function ExpenseTrendChart({ metrics }) {
           min: 0,
           max: 'auto',
         }}
-        margin={{ top: 30, right: 20, bottom: 60, left: 20 }}
+        margin={{ top: 30, right: 20, bottom: 70, left: 20 }}
         axisBottom={commonConfig.axisBottom}
         axisLeft={null}
         yFormat=">-.1f"
@@ -97,7 +97,7 @@ function ExpenseTrendChart({ metrics }) {
             direction: 'row',
             justify: true,
             translateX: 0,
-            translateY: 40,
+            translateY: 48,
             itemsSpacing: 30,
             itemWidth: 90,
             itemHeight: 20,

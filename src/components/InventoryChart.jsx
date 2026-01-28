@@ -7,6 +7,44 @@ import { getChartColors, getCommonChartConfig, formatValue, filterOutliers } fro
  * 存貨周轉 - 混合圖 (長條圖)
  * 注意: 需處理異常值 (如 31331)
  */
+
+// 自訂 Layer - 在長條圖上方顯示數值
+const BarLabelsLayer = ({ bars }) => {
+  if (!bars || bars.length === 0) return null;
+
+  try {
+    return (
+      <g style={{ pointerEvents: 'none' }}>
+        {bars.map((bar) => {
+          const value = bar.data?.value;
+          if (value === null || value === undefined) return null;
+          const xPos = bar.x + bar.width / 2;
+          const yPos = bar.y - 8;
+          // 加入千分位符號
+          const formattedValue = value != null ? Math.round(value).toLocaleString() : '';
+          return (
+            <text
+              key={`label-${bar.data?.year || bar.index}`}
+              x={xPos}
+              y={yPos}
+              textAnchor="middle"
+              dominantBaseline="auto"
+              fill="#10b981"
+              fontSize={14}
+              fontWeight={600}
+            >
+              {formattedValue}
+            </text>
+          );
+        })}
+      </g>
+    );
+  } catch (error) {
+    console.error('BarLabelsLayer error:', error);
+    return null;
+  }
+};
+
 function InventoryChart({ metrics }) {
   if (!metrics || !metrics.years || metrics.years.length === 0) {
     return (
@@ -48,19 +86,43 @@ function InventoryChart({ metrics }) {
         borderRadius={4}
         padding={0.3}
         innerPadding={2}
-        axisLeft={{
-          ...commonConfig.axisLeft,
-          format: value => formatValue(value, 0),
-          legend: '次',
-          legendOffset: -25,
-        }}
+        gridX={false}
+        gridY={false}
+        axisLeft={null}
         yFormat=">-.0f"
         axisBottom={{
           ...commonConfig.axisBottom,
-          legend: '年度',
+          legend: '',
           legendOffset: -30,
         }}
+        axisTop={null}
         enableLabel={false}
+        margin={{ top: 50, right: 20, bottom: 60, left: 50 }}
+        layers={['grid', 'axes', 'bars', 'legends', BarLabelsLayer]}
+        legends={[
+          {
+            anchor: 'bottom',
+            direction: 'row',
+            justify: false,
+            translateX: 0,
+            translateY: 45,
+            itemsSpacing: 30,
+            itemWidth: 90,
+            itemHeight: 20,
+            itemDirection: 'left-to-right',
+            symbolSize: 12,
+            symbolShape: 'square',
+            data: [{ id: 'value', label: '存貨週轉', color: '#10b981' }],
+          },
+        ]}
+        theme={{
+          ...commonConfig.theme,
+          grid: {
+            line: {
+              stroke: 'transparent',
+            },
+          },
+        }}
         tooltip={({
           index, value
         }) => (

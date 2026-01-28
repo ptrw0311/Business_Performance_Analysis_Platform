@@ -96,14 +96,14 @@ function GrowthChart({ metrics }) {
         enableGridY={false}
         isInteractive={false}
         layers={['grid', 'axes', 'areas', 'lines', 'points', 'slices', 'legends', PointLabelsLayer]}
-        margin={{ top: 30, right: 20, bottom: 60, left: 20 }}
+        margin={{ top: 30, right: 20, bottom: 70, left: 20 }}
         legends={[
           {
             anchor: 'bottom',
             direction: 'row',
             justify: false,
             translateX: 0,
-            translateY: 40,
+            translateY: 48,
             itemsSpacing: 30,
             itemWidth: 90,
             itemHeight: 20,
