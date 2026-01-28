@@ -429,7 +429,7 @@ body::after {
   gap: var(--space-sm);
   font-size: 15px;
   font-weight: 700;
-  color: var(--warning);
+  color: #78350f;
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
@@ -443,7 +443,7 @@ body::after {
   padding: var(--space-xl);
   font-size: 15px;
   line-height: 1.8;
-  color: var(--text-secondary);
+  color: #1e293b;
 }
 
 /* 年份選擇器 */
