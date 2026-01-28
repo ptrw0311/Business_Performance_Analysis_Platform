@@ -1,12 +1,43 @@
 import { useMemo } from 'react';
 import { ResponsiveLine } from '@nivo/line';
-import { transformMetricsToNivoData, getChartColors, getCommonChartConfig, formatValue } from './charts/chartUtils';
+import { transformMetricsToNivoData, formatValue } from './charts/chartUtils';
 
 /**
  * 成長動能圖表 (Growth)
- * 顯示營收成長率、毛利成長率、稅前淨利成長率的趨勢
- * 負值用紅色，正值用綠色
+ * 顯示營收成長率、稅前淨利成長率的趨勢
+ * 營收成長用藍色，稅前淨利成長用橙色
  */
+
+// 自訂 Layer - 在折線端點顯示數值
+const PointLabelsLayer = ({ points }) => {
+  try {
+    return (
+      <g style={{ pointerEvents: 'none' }}>
+        {points.map((point) => {
+          const value = point.data?.y;
+          if (value === null || value === undefined) return null;
+          return (
+            <text
+              key={point.id}
+              x={point.x}
+              y={point.y - 8}
+              textAnchor="middle"
+              fill="#333"
+              fontSize={9}
+              fontWeight="600"
+            >
+              {formatValue(value, 1)}%
+            </text>
+          );
+        })}
+      </g>
+    );
+  } catch (error) {
+    console.error('PointLabelsLayer error:', error);
+    return null;
+  }
+};
+
 function GrowthChart({ metrics }) {
   if (!metrics || !metrics.years || metrics.years.length === 0) {
     return (
@@ -16,33 +47,30 @@ function GrowthChart({ metrics }) {
     );
   }
 
-  const data = useMemo(() => {
-    return transformMetricsToNivoData(metrics, ['revenueGrowth', 'grossProfitGrowth', 'profitBeforeTaxGrowth'], metrics.years);
+  const rawData = useMemo(() => {
+    return transformMetricsToNivoData(metrics, ['revenueGrowth', 'profitBeforeTaxGrowth'], metrics.years);
   }, [metrics]);
 
-  // 成長動能特殊顏色配置
-  const colors = useMemo(() => getChartColors('growth'), []);
+  // 轉換 id 為中文顯示名稱
+  const data = useMemo(() => {
+    const idMap = {
+      revenueGrowth: '營收成長',
+      profitBeforeTaxGrowth: '稅前淨利成長',
+    };
+    return rawData.map(serie => ({
+      ...serie,
+      id: idMap[serie.id] || serie.id,
+    }));
+  }, [rawData]);
 
-  // 根據數值正負設定顏色
+  // 固定顏色設定
   const getColor = (line) => {
     const colorMap = {
-      revenueGrowth: (line) => {
-        const lastValue = line.data[line.data.length - 1]?.y;
-        return lastValue >= 0 ? '#10b981' : '#ef4444';
-      },
-      grossProfitGrowth: (line) => {
-        const lastValue = line.data[line.data.length - 1]?.y;
-        return lastValue >= 0 ? '#10b981' : '#ef4444';
-      },
-      profitBeforeTaxGrowth: (line) => {
-        const lastValue = line.data[line.data.length - 1]?.y;
-        return lastValue >= 0 ? '#10b981' : '#ef4444';
-      },
+      '營收成長': '#3b82f6',
+      '稅前淨利成長': '#f97316',
     };
-    return colorMap[line.id]?.(line) || '#3b82f6';
+    return colorMap[line.id] || '#3b82f6';
   };
-
-  const commonConfig = useMemo(() => getCommonChartConfig(), []);
 
   return (
     <div className="chart-container">
@@ -50,46 +78,34 @@ function GrowthChart({ metrics }) {
         <h4 className="chart-title">成長動能 (Growth)</h4>
       </div>
       <ResponsiveLine
-        {...commonConfig}
         data={data}
         yScale={{
           type: 'linear',
           min: 'auto',
           max: 'auto',
         }}
-        axisLeft={{
-          ...commonConfig.axisLeft,
-          format: value => formatValue(value, 0) + '%',
-          legend: '成長率 (%)',
-          legendOffset: -40,
-        }}
-        yFormat=">-.0f"
-        curve="monotoneX"
+        axisLeft={null}
+        yFormat=">-.1f"
+        curve="linear"
         colors={getColor}
         pointSize={6}
         pointBorderWidth={2}
         pointBorderColor={{ from: 'color' }}
-        enableArea={true}
-        areaBaselineValue={0}
-        areaOpacity={0.1}
-        useMesh={true}
-        enableCrosshair={true}
-        crosshairType="bottom"
-        tooltip={({
-          point }) => (
-          <div style={{ color: 'inherit', fontSize: '12px' }}>
-            <strong>{point.serieId}</strong>: {formatValue(point.data.y)}%
-          </div>
-        )}
+        enableArea={false}
+        enableGridX={false}
+        enableGridY={false}
+        isInteractive={false}
+        layers={['grid', 'axes', 'areas', 'lines', 'points', 'slices', 'legends', 'PointLabelsLayer']}
+        margin={{ top: 40, right: 30, bottom: 70, left: 30 }}
         legends={[
           {
-            anchor: 'top-right',
+            anchor: 'bottom',
             direction: 'row',
             justify: false,
             translateX: 0,
-            translateY: -20,
-            itemsSpacing: 4,
-            itemWidth: 85,
+            translateY: 40,
+            itemsSpacing: 30,
+            itemWidth: 90,
             itemHeight: 20,
             itemDirection: 'left-to-right',
             symbolSize: 8,

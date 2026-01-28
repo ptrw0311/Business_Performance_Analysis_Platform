@@ -15,9 +15,22 @@ function ExpenseTrendChart({ metrics }) {
     );
   }
 
-  const data = useMemo(() => {
+  const rawData = useMemo(() => {
     return transformMetricsToNivoData(metrics, ['sellingExpenseRatio', 'adminExpenseRatio', 'rdExpenseRatio'], metrics.years);
   }, [metrics]);
+
+  // 轉換 id 為中文顯示名稱
+  const data = useMemo(() => {
+    const idMap = {
+      sellingExpenseRatio: '推銷%',
+      adminExpenseRatio: '管理%',
+      rdExpenseRatio: '研發%',
+    };
+    return rawData.map(serie => ({
+      ...serie,
+      id: idMap[serie.id] || serie.id,
+    }));
+  }, [rawData]);
 
   const colors = useMemo(() => getChartColors('expense'), []);
   const commonConfig = useMemo(() => getCommonChartConfig(), []);
@@ -28,19 +41,15 @@ function ExpenseTrendChart({ metrics }) {
         <h4 className="chart-title">費用率趨勢 (Expense Trend)</h4>
       </div>
       <ResponsiveLine
-        {...commonConfig}
         data={data}
         yScale={{
           type: 'linear',
           min: 0,
           max: 'auto',
         }}
-        axisLeft={{
-          ...commonConfig.axisLeft,
-          format: value => formatValue(value, 0) + '%',
-          legend: '占比 (%)',
-          legendOffset: -40,
-        }}
+        margin={{ top: 40, right: 30, bottom: 90, left: 30 }}
+        axisBottom={commonConfig.axisBottom}
+        axisLeft={null}
         yFormat=">-.0f"
         curve="monotoneX"
         colors={colors}
@@ -48,9 +57,12 @@ function ExpenseTrendChart({ metrics }) {
         pointBorderWidth={2}
         pointBorderColor={{ from: 'color' }}
         enableArea={false}
+        enableGridX={false}
+        enableGridY={false}
         useMesh={true}
         enableCrosshair={true}
         crosshairType="bottom"
+        layers={['grid', 'axes', 'areas', 'lines', 'points', 'slices', 'mesh', 'legends']}
         tooltip={({
           point }) => (
           <div style={{ color: 'inherit', fontSize: '12px' }}>
@@ -59,12 +71,12 @@ function ExpenseTrendChart({ metrics }) {
         )}
         legends={[
           {
-            anchor: 'top-right',
+            anchor: 'bottom',
             direction: 'row',
-            justify: false,
+            justify: true,
             translateX: 0,
-            translateY: -20,
-            itemsSpacing: 4,
+            translateY: 40,
+            itemsSpacing: 30,
             itemWidth: 90,
             itemHeight: 20,
             itemDirection: 'left-to-right',
