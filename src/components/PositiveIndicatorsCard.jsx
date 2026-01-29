@@ -323,7 +323,7 @@ function PositiveIndicatorsCard({ metrics }) {
               <li key={index} className="indicator-item">
                 <div className="indicator-item-header">
                   <span className="indicator-name">{item.metric}</span>
-                  <span className="indicator-value positive">
+                  <span className="indicator-value positive" style={{ marginLeft: '8px' }}>
                     {formatValue(item.value, item.unit)}
                   </span>
                 </div>

@@ -64,7 +64,9 @@
       "mcp__playwright__browser_snapshot",
       "Bash(pkill:*)",
       "mcp__playwright__browser_hover",
-      "mcp__playwright__browser_run_code"
+      "mcp__playwright__browser_run_code",
+      "Bash(.venv/Scripts/python.exe:*)",
+      "Bash(uv run python:*)"
     ]
   }
 }

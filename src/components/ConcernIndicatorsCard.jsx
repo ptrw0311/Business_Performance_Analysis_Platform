@@ -481,12 +481,12 @@ function ConcernIndicatorsCard({ metrics }) {
             {concerns.map((item, index) => (
               <li key={index} className="indicator-item">
                 <div className="indicator-item-header">
-                  <span className="indicator-name">{item.metric}</span>
-                  <span className={`indicator-value ${item.level === 'critical' ? 'concern' : 'warning'}`}>
+                  <span className="indicator-name" style={{ fontSize: '11px' }}>{item.metric}</span>
+                  <span className={`indicator-value ${item.level === 'critical' ? 'concern' : 'warning'}`} style={{ marginLeft: '8px', fontSize: '11px' }}>
                     {formatValue(item.value, item.unit)}
                   </span>
                 </div>
-                <div className="indicator-reason">
+                <div className="indicator-reason" style={{ fontSize: '11px' }}>
                   <span className="indicator-criteria">{item.criteria}</span>
                   {' · '}{item.reason}
                 </div>

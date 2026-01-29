@@ -31,7 +31,7 @@ const BarLabelsLayer = ({ bars }) => {
               fontSize={14}
               fontWeight={600}
             >
-              {formatValue(value, 1)}
+              {formatValue(value, 1)} 次
             </text>
           );
         })}
@@ -124,13 +124,7 @@ function AREfficiencyChart({ metrics }) {
             },
           },
         }}
-        tooltip={({
-          index, value
-        }) => (
-          <div style={{ color: 'inherit', fontSize: '12px' }}>
-            <strong>{index}</strong>: {formatValue(value, 0)} 次
-          </div>
-        )}
+        isInteractive={false}
       />
     </div>
   );

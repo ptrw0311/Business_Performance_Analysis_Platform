@@ -126,7 +126,7 @@ function FinanceChart({ labels, revenue, profit, selectedYear, onYearChange }) {
             tickRotation: 0,
             format: (value) => value.toLocaleString(),
             style: {
-              tick: { fill: '#475569', fontSize: 15, fontWeight: '500' },
+              tick: { fill: '#475569', fontSize: 12, fontWeight: '500' },
             },
           }}
           axisBottom={{
@@ -281,7 +281,7 @@ function FinanceChart({ labels, revenue, profit, selectedYear, onYearChange }) {
             axis: {
               ticks: {
                 text: {
-                  fontSize: 20,
+                  fontSize: 12,
                   fontWeight: 600,
                 },
               },

@@ -123,13 +123,7 @@ function InventoryChart({ metrics }) {
             },
           },
         }}
-        tooltip={({
-          index, value
-        }) => (
-          <div style={{ color: 'inherit', fontSize: '12px' }}>
-            <strong>{index}</strong>: {formatValue(value, 0)} 次
-          </div>
-        )}
+        isInteractive={false}
       />
     </div>
   );

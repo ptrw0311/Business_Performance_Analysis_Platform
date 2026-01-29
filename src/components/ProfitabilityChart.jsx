@@ -134,27 +134,19 @@ function ProfitabilityChart({ metrics }) {
         enableArea={true}
         areaBaselineValue={0}
         areaOpacity={0.15}
-        useMesh={true}
-        enableCrosshair={true}
-        crosshairType="bottom"
+        useMesh={false}
+        enableCrosshair={false}
         theme={customTheme}
         // 添加端點標籤 layer（不使用 grid 層來拿掉格線）
         layers={[
           'axes',
           'areas',
-          'crosshair',
           'lines',
           'points',
           PointLabelsLayer,
           'slices',
-          'mesh',
           'legends',
         ]}
-        tooltip={({ point }) => (
-          <div style={{ color: 'inherit', fontSize: '12px' }}>
-            <strong>{point.serieId}</strong>: {formatValue(point.data.y)}%
-          </div>
-        )}
         legends={[
           {
             anchor: 'bottom',
