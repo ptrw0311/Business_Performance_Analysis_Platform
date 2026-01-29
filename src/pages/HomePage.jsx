@@ -359,8 +359,11 @@ function HomePage() {
   return (
     <div className="container" id="capture-area">
       <div className="title-box">
-        <img src={robotLogo} alt="FinRobot" className="title-logo" />
-        <h2>財務機器人 <span className="english-text">Financial Robot</span></h2>
+        <div className="title-row">
+          <img src={robotLogo} alt="FinRobot" className="title-logo" />
+          <h2>財務分析機器人</h2>
+        </div>
+        <p className="subtitle-text">Financial Analysis Bot</p>
       </div>
 
       <CompanySelector
