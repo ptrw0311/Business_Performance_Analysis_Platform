@@ -5,7 +5,6 @@ import InsightPanel from '../components/InsightPanel';
 import FinanceChart from '../components/FinanceChart';
 import KPIAndChartsSection from '../components/KPIAndChartsSection';
 import FinancialDataTable from '../components/FinancialDataTable';
-import ControlPanel from '../components/ControlPanel';
 import DataManagerTabs from '../components/DataManagerTabs';
 import DataTable from '../components/DataTable';
 import EditModal from '../components/EditModal';
@@ -16,6 +15,34 @@ import robotLogo from '../assets/robot.png';
 // API 基礎 URL（開發時使用 proxy，生產時直接使用）
 const API_BASE = '/api';
 
+// 財務報表欄位定義
+const financialBasicsColumns = [
+  { key: 'company_name', label: '公司名稱', sticky: true, stickyIndex: 0 },
+  { key: 'fiscal_year', label: '年度', sticky: true, stickyIndex: 1 },
+  { key: 'cash_equivalents', label: '現金及約當現金' },
+  { key: 'ar_net', label: '應收帳款淨額' },
+  { key: 'inventory', label: '存貨' },
+  { key: 'total_current_assets', label: '流動資產合計' },
+  { key: 'ppe', label: '不動產廠房設備' },
+  { key: 'total_assets', label: '資產總額' },
+  { key: 'total_current_liabilities', label: '流動負債合計' },
+  { key: 'total_liabilities', label: '負債總額' },
+  { key: 'total_equity', label: '權益總額' },
+];
+
+// 損益表欄位定義
+const plIncomeColumns = [
+  { key: 'company_name', label: '公司名稱', sticky: true, stickyIndex: 0 },
+  { key: 'fiscal_year', label: '年度', sticky: true, stickyIndex: 1 },
+  { key: 'operating_revenue_total', label: '營業收入合計' },
+  { key: 'operating_costs_total', label: '營業成本合計' },
+  { key: 'gross_profit_loss', label: '營業毛利(毛損)' },
+  { key: 'operating_income_loss', label: '營業利益(損失)' },
+  { key: 'nonop_income_expense_total', label: '營業外收支合計' },
+  { key: 'profit_before_tax', label: '稅前淨利(淨損)' },
+  { key: 'net_income', label: '本期淨利(淨損)' },
+];
+
 function HomePage() {
   // 現有狀態
   const [companies, setCompanies] = useState([]);
@@ -25,7 +52,7 @@ function HomePage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // 新增狀態 - 數據管理
+  // 數據管理狀態
   const [allFinancialData, setAllFinancialData] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState('create');
@@ -34,12 +61,19 @@ function HomePage() {
   const [deletingRecord, setDeletingRecord] = useState(null);
   const [recentlyDeleted, setRecentlyDeleted] = useState(null);
   const [undoTimeoutId, setUndoTimeoutId] = useState(null);
-  const [activeTab, setActiveTab] = useState('quick-add');
+
+  // 新增多報表狀態
+  const [activeReportTab, setActiveReportTab] = useState('financial-basics');
+  const [financialBasicsData, setFinancialBasicsData] = useState([]);
+  const [plIncomeData, setPlIncomeData] = useState([]);
+  const [isLoadingReportData, setIsLoadingReportData] = useState(false);
 
   // 載入公司列表
   useEffect(() => {
     fetchCompanies();
     fetchAllFinancialData();
+    fetchFinancialBasicsData();
+    fetchPlIncomeData();
   }, []);
 
   // 當選擇公司變更時，載入該公司的財務資料
@@ -49,7 +83,7 @@ function HomePage() {
     }
   }, [selectedCompany]);
 
-  // 取得所有公司所有財務數據
+  // 取得所有公司所有財務數據（簡化版用於圖表）
   const fetchAllFinancialData = async () => {
     try {
       const response = await fetch(`${API_BASE}/financial/all`);
@@ -62,16 +96,46 @@ function HomePage() {
     }
   };
 
+  // 取得財務報表資料（financial_basics）
+  const fetchFinancialBasicsData = async () => {
+    try {
+      setIsLoadingReportData(true);
+      const response = await fetch(`${API_BASE}/financial-basics/`);
+      if (response.ok) {
+        const result = await response.json();
+        setFinancialBasicsData(result.data || []);
+      }
+    } catch (err) {
+      console.error('載入財務報表失敗:', err);
+    } finally {
+      setIsLoadingReportData(false);
+    }
+  };
+
+  // 取得損益表資料（pl_income_basics）
+  const fetchPlIncomeData = async () => {
+    try {
+      setIsLoadingReportData(true);
+      const response = await fetch(`${API_BASE}/pl-income/`);
+      if (response.ok) {
+        const result = await response.json();
+        setPlIncomeData(result.data || []);
+      }
+    } catch (err) {
+      console.error('載入損益表失敗:', err);
+    } finally {
+      setIsLoadingReportData(false);
+    }
+  };
+
   const fetchCompanies = async () => {
     try {
       setIsLoading(true);
-      // 先嘗試從 API 獲取
       const response = await fetch(`${API_BASE}/companies`);
       if (response.ok) {
         const data = await response.json();
         setCompanies(data.companies || []);
         if (data.companies && data.companies.length > 0) {
-          // 預設選擇「博弘雲端」，如果不存在則選第一個
           const defaultCompany = data.companies.find(c => c.name === '博弘雲端') || data.companies[0];
           setSelectedCompany(defaultCompany.name);
         }
@@ -80,11 +144,9 @@ function HomePage() {
       }
     } catch (err) {
       console.error('載入公司列表失敗:', err);
-      // API 失敗時使用 demo 資料
       const demoCompanies = [{ id: 1, name: '博弘雲端' }];
       setCompanies(demoCompanies);
       setSelectedCompany('博弘雲端');
-      // 使用 demo 財務資料
       setFinancialData({
         labels: ['2021', '2022', '2023', '2024', '2025'],
         revenue: [3510, 5061, 4749, 4002, 4468],
@@ -98,12 +160,10 @@ function HomePage() {
 
   const fetchFinancialData = async (companyName) => {
     try {
-      // 使用 query string 避免 URL 編碼問題
       const response = await fetch(`${API_BASE}/financial/by-name?company=${encodeURIComponent(companyName)}`);
       if (response.ok) {
         const data = await response.json();
         setFinancialData(data.data);
-        // 預設選擇最新年份
         if (data.data?.labels?.length > 0) {
           setSelectedYear(data.data.labels[data.data.labels.length - 1]);
         }
@@ -112,7 +172,6 @@ function HomePage() {
       }
     } catch (err) {
       console.error('載入財務資料失敗:', err);
-      // 使用 demo 資料
       if (companyName === '博弘雲端') {
         setFinancialData({
           labels: ['2021', '2022', '2023', '2024', '2025'],
@@ -141,10 +200,8 @@ function HomePage() {
       });
 
       if (response.ok) {
-        // 重新載入財務資料
         await fetchFinancialData(data.company);
       } else {
-        // 本地更新 (demo 模式)
         if (selectedCompany === '博弘雲端' && financialData) {
           const idx = financialData.labels.indexOf(data.year);
           const newLabels = [...financialData.labels];
@@ -194,7 +251,6 @@ function HomePage() {
         console.error('匯出失敗:', err);
       }
 
-      // 本地匯出 (demo 模式)
       const exportData = [['公司名稱', '年份', '營收', '稅前淨利']];
       if (financialData) {
         financialData.labels.forEach((label, i) => {
@@ -220,10 +276,8 @@ function HomePage() {
 
         if (response.ok) {
           const result = await response.json();
-          // 重新載入公司列表和所有數據
           await fetchCompanies();
           await fetchAllFinancialData();
-          // 切換到第一個新公司
           if (result.companies && result.companies.length > 0) {
             setSelectedCompany(result.companies[0]);
           }
@@ -235,12 +289,11 @@ function HomePage() {
     }
   };
 
-  // 新增 CRUD 方法
-
-  // 開啟新增 Modal
-  const handleCreate = () => {
+  // 開啟新增 Modal（支援多報表類型）
+  const handleCreate = (reportType) => {
     setEditingRecord(null);
     setModalMode('create');
+    setActiveReportTab(reportType);
     setIsModalOpen(true);
   };
 
@@ -257,31 +310,28 @@ function HomePage() {
     setDeleteConfirmOpen(true);
   };
 
-  // 確認刪除
+  // 確認刪除（支援多報表類型）
   const confirmDelete = async () => {
     if (!deletingRecord) return;
 
     try {
-      const response = await fetch(`${API_BASE}/financial/${deletingRecord.company_id}/${deletingRecord.year}`, {
-        method: 'DELETE',
-      });
+      // 根據當前 Tab 決定呼叫哪個 API
+      const apiUrl = activeReportTab === 'financial-basics'
+        ? `${API_BASE}/financial-basics/${deletingRecord.tax_id}/${deletingRecord.fiscal_year}`
+        : `${API_BASE}/pl-income/${deletingRecord.tax_id}/${deletingRecord.fiscal_year}`;
+
+      const response = await fetch(apiUrl, { method: 'DELETE' });
 
       if (response.ok) {
-        // 保存到最近刪除 (用於復原)
         setRecentlyDeleted(deletingRecord);
-
-        // 設置自動消失計時器
-        const timerId = setTimeout(() => {
-          setRecentlyDeleted(null);
-        }, 5000);
+        const timerId = setTimeout(() => setRecentlyDeleted(null), 5000);
         setUndoTimeoutId(timerId);
 
-        // 重新載入所有數據
-        await fetchAllFinancialData();
-
-        // 如果刪除的是當前選中公司的數據，重新載入該公司數據
-        if (selectedCompany === deletingRecord.company) {
-          await fetchFinancialData(selectedCompany);
+        // 重新載入對應的報表資料
+        if (activeReportTab === 'financial-basics') {
+          await fetchFinancialBasicsData();
+        } else {
+          await fetchPlIncomeData();
         }
 
         setDeleteConfirmOpen(false);
@@ -297,42 +347,37 @@ function HomePage() {
   const undoDelete = async () => {
     if (!recentlyDeleted) return;
 
-    // 清除計時器
     if (undoTimeoutId) {
       clearTimeout(undoTimeoutId);
     }
 
     try {
-      await handleSaveData({
-        company: recentlyDeleted.company,
-        year: recentlyDeleted.year,
-        revenue: recentlyDeleted.revenue,
-        profit: recentlyDeleted.profit,
-      });
+      await handleSaveData(recentlyDeleted, activeReportTab);
       setRecentlyDeleted(null);
     } catch (err) {
       alert('復原失敗');
     }
   };
 
-  // 儲存新增/編輯數據
-  const handleSaveData = async (data) => {
+  // 儲存新增/編輯數據（支援多報表類型）
+  const handleSaveData = async (data, reportType) => {
     try {
-      const response = await fetch(`${API_BASE}/financial`, {
+      const apiUrl = reportType === 'financial-basics'
+        ? `${API_BASE}/financial-basics/`
+        : `${API_BASE}/pl-income/`;
+
+      const response = await fetch(apiUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
       });
 
       if (response.ok) {
-        // 重新載入所有數據
-        await fetchAllFinancialData();
-
-        // 如果是當前選中公司，重新載入該公司數據
-        if (selectedCompany === data.company) {
-          await fetchFinancialData(data.company);
+        if (reportType === 'financial-basics') {
+          await fetchFinancialBasicsData();
+        } else {
+          await fetchPlIncomeData();
         }
-
         setIsModalOpen(false);
       } else {
         throw new Error('儲存失敗');
@@ -341,6 +386,14 @@ function HomePage() {
       console.error('儲存失敗:', err);
       throw err;
     }
+  };
+
+  const getCurrentData = () => {
+    return activeReportTab === 'financial-basics' ? financialBasicsData : plIncomeData;
+  };
+
+  const getCurrentColumns = () => {
+    return activeReportTab === 'financial-basics' ? financialBasicsColumns : plIncomeColumns;
   };
 
   if (error) {
@@ -400,15 +453,10 @@ function HomePage() {
             onYearChange={handleYearChange}
           />
 
-          {/* KPI 和圖表區塊 */}
           <KPIAndChartsSection company={selectedCompany} />
-
-          {/* 詳細財務數據表 */}
           <FinancialDataTable company={selectedCompany} />
 
-          {/* PDF 專用擷取區域 - 隱藏顯示，僅供 PDF 匯出使用 */}
           <div id="pdf-capture-area" style={{ position: 'absolute', left: '-9999px', top: '0', width: '794px', background: '#ffffff', padding: '40px' }}>
-            {/* 標題區 */}
             <div style={{ textAlign: 'center', marginBottom: '30px' }}>
               <h2 style={{ fontSize: '24px', fontWeight: 'bold', color: '#1e293b', marginBottom: '8px' }}>
                 {selectedCompany}
@@ -416,7 +464,6 @@ function HomePage() {
               <div style={{ fontSize: '14px', color: '#64748b' }}>經營績效分析報告</div>
             </div>
 
-            {/* PDF 版本的績效洞察 */}
             <div style={{ marginBottom: '30px', padding: '20px', background: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
               <div style={{ display: 'flex', alignItems: 'center', marginBottom: '16px' }}>
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '8px', color: '#3b82f6' }}>
@@ -425,65 +472,55 @@ function HomePage() {
                 </svg>
                 <span style={{ fontSize: '16px', fontWeight: 'bold', color: '#1e293b' }}>績效洞察 (Performance Insight)</span>
               </div>
-              <div id="pdf-insight-content" style={{ fontSize: '14px', lineHeight: '1.8', color: '#475569' }}>
-                {/* 績效洞察內容將由 JavaScript 動態填入 */}
-              </div>
+              <div id="pdf-insight-content" style={{ fontSize: '14px', lineHeight: '1.8', color: '#475569' }}></div>
             </div>
 
-            {/* PDF 版本的圖表區 - 使用圖片方式 */}
-            <div id="pdf-chart-container" style={{ marginBottom: '20px' }}>
-              {/* 圖表將由 JavaScript 動態轉換為圖片 */}
-            </div>
+            <div id="pdf-chart-container" style={{ marginBottom: '20px' }}></div>
 
-            {/* PDF 版本的淨利率區 */}
             <div style={{ padding: '20px', background: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
               <div style={{ fontSize: '16px', fontWeight: 'bold', color: '#1e293b', marginBottom: '12px' }}>
                 淨利率 (Net profit margin)
               </div>
-              <div id="pdf-margin-content" style={{ display: 'flex', justifyContent: 'space-around', flexWrap: 'wrap' }}>
-                {/* 淨利率資料將由 JavaScript 動態填入 */}
-              </div>
+              <div id="pdf-margin-content" style={{ display: 'flex', justifyContent: 'space-around', flexWrap: 'wrap' }}></div>
             </div>
           </div>
         </>
       )}
 
       {/* 數據管理區塊 */}
-      <DataManagerTabs
-        activeTab={activeTab}
-        onTabChange={setActiveTab}
-        tableContent={
-          <div>
-            <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '16px' }}>
-              <button className="btn-action btn-excel-in" onClick={handleCreate}>
-                ➕ 新增數據
-              </button>
-            </div>
+      <div className="data-manager-section">
+        <div className="section-header">
+          <h3>📊 數據與檔案管理</h3>
+        </div>
+
+        <DataManagerTabs
+          activeReportTab={activeReportTab}
+          onTabChange={setActiveReportTab}
+          financialBasicsContent={
             <DataTable
-              data={allFinancialData}
+              data={financialBasicsData}
+              columns={financialBasicsColumns}
               onEdit={handleEdit}
               onDelete={handleDelete}
             />
-            <ControlPanel
-              companyName={selectedCompany}
-              onUpdateData={handleUpdateData}
-              onBulkImport={handleBulkImport}
+          }
+          plIncomeContent={
+            <DataTable
+              data={plIncomeData}
+              columns={plIncomeColumns}
+              onEdit={handleEdit}
+              onDelete={handleDelete}
             />
-          </div>
-        }
-        quickAddContent={
-          <ControlPanel
-            companyName={selectedCompany}
-            onUpdateData={handleUpdateData}
-            onBulkImport={handleBulkImport}
-          />
-        }
-      />
+          }
+          onAddNew={handleCreate}
+        />
+      </div>
 
       {/* Modal 組件 */}
       <EditModal
         isOpen={isModalOpen}
         mode={modalMode}
+        reportType={activeReportTab}
         initialValues={editingRecord}
         companies={companies}
         onSave={handleSaveData}
@@ -502,7 +539,7 @@ function HomePage() {
 
       {recentlyDeleted && (
         <UndoToast
-          message={`✓ 已刪除: ${recentlyDeleted.company} ${recentlyDeleted.year} 年度數據`}
+          message={`✓ 已刪除: ${recentlyDeleted.company_name || recentlyDeleted.company} ${recentlyDeleted.fiscal_year || recentlyDeleted.year} 年度數據`}
           onUndo={undoDelete}
         />
       )}

@@ -308,6 +308,306 @@ app.delete('/api/financial/:companyId/:year', async (req, res) => {
   res.status(403).json({ error: 'Supabase 模式下不支援刪除功能，資料庫為唯讀' });
 });
 
+// API: 取得所有財務報表資料 (financial_basics)
+app.get('/api/financial-basics/', async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('financial_basics')
+      .select('*')
+      .order('fiscal_year', { ascending: false })
+      .order('tax_id', { ascending: true });
+
+    if (error) throw error;
+
+    res.json({
+      success: true,
+      data: data || [],
+      count: data?.length || 0
+    });
+  } catch (error) {
+    console.error('查詢財務報表失敗:', error);
+    res.status(500).json({ error: '查詢財務報表失敗: ' + error.message });
+  }
+});
+
+// API: 新增或更新財務報表資料 (financial_basics upsert)
+app.post('/api/financial-basics/', async (req, res) => {
+  try {
+    const body = req.body;
+
+    // 驗證必填欄位
+    if (!body.fiscal_year || !body.tax_id) {
+      return res.status(400).json({ error: '缺少必填欄位: fiscal_year, tax_id' });
+    }
+
+    // 驗證年度格式
+    const year = parseInt(body.fiscal_year);
+    if (isNaN(year) || year < 1900 || year > 2100) {
+      return res.status(400).json({ error: '年度格式錯誤，必須為 1900-2100 之間的數字' });
+    }
+
+    // 驗證統一編號格式
+    const taxId = String(body.tax_id).trim();
+    if (!/^\d{8}$/.test(taxId)) {
+      return res.status(400).json({ error: '統一編號格式錯誤，必須為 8 位數字' });
+    }
+
+    // 準備 upsert 資料
+    const upsertData = {
+      fiscal_year: year,
+      tax_id: taxId,
+      ...body
+    };
+
+    const { data, error } = await supabase
+      .from('financial_basics')
+      .upsert(upsertData, {
+        onConflict: 'fiscal_year,tax_id',
+        ignoreDuplicates: false
+      })
+      .select();
+
+    if (error) throw error;
+
+    res.json({
+      success: true,
+      data: data?.[0] || null,
+      message: '財務報表儲存成功'
+    });
+  } catch (error) {
+    console.error('Upsert 財務報表失敗:', error);
+    res.status(500).json({ error: 'Upsert 財務報表失敗: ' + error.message });
+  }
+});
+
+// API: 更新指定財務報表資料
+app.put('/api/financial-basics/:taxId/:year', async (req, res) => {
+  try {
+    const { taxId, year } = req.params;
+    const body = req.body;
+
+    // 驗證參數
+    if (!/^\d{8}$/.test(taxId)) {
+      return res.status(400).json({ error: '統一編號格式錯誤' });
+    }
+    const yearNum = parseInt(year);
+    if (isNaN(yearNum) || yearNum < 1900 || yearNum > 2100) {
+      return res.status(400).json({ error: '年度格式錯誤' });
+    }
+
+    // 移除主鍵欄位
+    const { fiscal_year, tax_id, ...updateData } = body;
+
+    const { data, error } = await supabase
+      .from('financial_basics')
+      .update(updateData)
+      .eq('tax_id', taxId)
+      .eq('fiscal_year', yearNum)
+      .select();
+
+    if (error) throw error;
+
+    if (!data || data.length === 0) {
+      return res.status(404).json({ error: '找不到指定的財務報表資料' });
+    }
+
+    res.json({
+      success: true,
+      data: data[0],
+      message: '財務報表更新成功'
+    });
+  } catch (error) {
+    console.error('更新財務報表失敗:', error);
+    res.status(500).json({ error: '更新財務報表失敗: ' + error.message });
+  }
+});
+
+// API: 刪除指定財務報表資料
+app.delete('/api/financial-basics/:taxId/:year', async (req, res) => {
+  try {
+    const { taxId, year } = req.params;
+
+    // 先查詢資料是否存在
+    const { data: existingData } = await supabase
+      .from('financial_basics')
+      .select('*')
+      .eq('tax_id', taxId)
+      .eq('fiscal_year', year)
+      .single();
+
+    if (!existingData) {
+      return res.status(404).json({ error: '找不到指定的財務報表資料' });
+    }
+
+    const { error } = await supabase
+      .from('financial_basics')
+      .delete()
+      .eq('tax_id', taxId)
+      .eq('fiscal_year', year);
+
+    if (error) throw error;
+
+    res.json({
+      success: true,
+      deletedData: existingData,
+      message: '財務報表刪除成功'
+    });
+  } catch (error) {
+    console.error('刪除財務報表失敗:', error);
+    res.status(500).json({ error: '刪除財務報表失敗: ' + error.message });
+  }
+});
+
+// API: 取得所有損益表資料 (pl_income_basics)
+app.get('/api/pl-income/', async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('pl_income_basics')
+      .select('*')
+      .order('fiscal_year', { ascending: false })
+      .order('tax_id', { ascending: true });
+
+    if (error) throw error;
+
+    res.json({
+      success: true,
+      data: data || [],
+      count: data?.length || 0
+    });
+  } catch (error) {
+    console.error('查詢損益表失敗:', error);
+    res.status(500).json({ error: '查詢損益表失敗: ' + error.message });
+  }
+});
+
+// API: 新增或更新損益表資料 (pl_income_basics upsert)
+app.post('/api/pl-income/', async (req, res) => {
+  try {
+    const body = req.body;
+
+    // 驗證必填欄位
+    if (!body.fiscal_year || !body.tax_id) {
+      return res.status(400).json({ error: '缺少必填欄位: fiscal_year, tax_id' });
+    }
+
+    // 驗證年度格式
+    const year = parseInt(body.fiscal_year);
+    if (isNaN(year) || year < 1900 || year > 2100) {
+      return res.status(400).json({ error: '年度格式錯誤，必須為 1900-2100 之間的數字' });
+    }
+
+    // 驗證統一編號格式
+    const taxId = String(body.tax_id).trim();
+    if (!/^\d{8}$/.test(taxId)) {
+      return res.status(400).json({ error: '統一編號格式錯誤，必須為 8 位數字' });
+    }
+
+    // 準備 upsert 資料
+    const upsertData = {
+      fiscal_year: year,
+      tax_id: taxId,
+      ...body
+    };
+
+    const { data, error } = await supabase
+      .from('pl_income_basics')
+      .upsert(upsertData, {
+        onConflict: 'fiscal_year,tax_id',
+        ignoreDuplicates: false
+      })
+      .select();
+
+    if (error) throw error;
+
+    res.json({
+      success: true,
+      data: data?.[0] || null,
+      message: '損益表儲存成功'
+    });
+  } catch (error) {
+    console.error('Upsert 損益表失敗:', error);
+    res.status(500).json({ error: 'Upsert 損益表失敗: ' + error.message });
+  }
+});
+
+// API: 更新指定損益表資料
+app.put('/api/pl-income/:taxId/:year', async (req, res) => {
+  try {
+    const { taxId, year } = req.params;
+    const body = req.body;
+
+    // 驗證參數
+    if (!/^\d{8}$/.test(taxId)) {
+      return res.status(400).json({ error: '統一編號格式錯誤' });
+    }
+    const yearNum = parseInt(year);
+    if (isNaN(yearNum) || yearNum < 1900 || yearNum > 2100) {
+      return res.status(400).json({ error: '年度格式錯誤' });
+    }
+
+    // 移除主鍵欄位
+    const { fiscal_year, tax_id, ...updateData } = body;
+
+    const { data, error } = await supabase
+      .from('pl_income_basics')
+      .update(updateData)
+      .eq('tax_id', taxId)
+      .eq('fiscal_year', yearNum)
+      .select();
+
+    if (error) throw error;
+
+    if (!data || data.length === 0) {
+      return res.status(404).json({ error: '找不到指定的損益表資料' });
+    }
+
+    res.json({
+      success: true,
+      data: data[0],
+      message: '損益表更新成功'
+    });
+  } catch (error) {
+    console.error('更新損益表失敗:', error);
+    res.status(500).json({ error: '更新損益表失敗: ' + error.message });
+  }
+});
+
+// API: 刪除指定損益表資料
+app.delete('/api/pl-income/:taxId/:year', async (req, res) => {
+  try {
+    const { taxId, year } = req.params;
+
+    // 先查詢資料是否存在
+    const { data: existingData } = await supabase
+      .from('pl_income_basics')
+      .select('*')
+      .eq('tax_id', taxId)
+      .eq('fiscal_year', year)
+      .single();
+
+    if (!existingData) {
+      return res.status(404).json({ error: '找不到指定的損益表資料' });
+    }
+
+    const { error } = await supabase
+      .from('pl_income_basics')
+      .delete()
+      .eq('tax_id', taxId)
+      .eq('fiscal_year', year);
+
+    if (error) throw error;
+
+    res.json({
+      success: true,
+      deletedData: existingData,
+      message: '損益表刪除成功'
+    });
+  } catch (error) {
+    console.error('刪除損益表失敗:', error);
+    res.status(500).json({ error: '刪除損益表失敗: ' + error.message });
+  }
+});
+
 // API: 批量刪除 (Supabase 模式下已停用)
 app.delete('/api/financial/bulk', async (req, res) => {
   res.status(403).json({ error: 'Supabase 模式下不支援刪除功能，資料庫為唯讀' });
