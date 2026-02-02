@@ -10,6 +10,7 @@ import DataTable from '../components/DataTable';
 import EditModal from '../components/EditModal';
 import DeleteConfirmDialog from '../components/DeleteConfirmDialog';
 import UndoToast from '../components/UndoToast';
+import ImportPreviewModal from '../components/ImportPreviewModal';
 import robotLogo from '../assets/robot.png';
 
 // API 基礎 URL（開發時使用 proxy，生產時直接使用）
@@ -67,6 +68,11 @@ function HomePage() {
   const [financialBasicsData, setFinancialBasicsData] = useState([]);
   const [plIncomeData, setPlIncomeData] = useState([]);
   const [isLoadingReportData, setIsLoadingReportData] = useState(false);
+
+  // Excel 匯入狀態
+  const [importPreviewOpen, setImportPreviewOpen] = useState(false);
+  const [parsedImportData, setParsedImportData] = useState(null);
+  const [importError, setImportError] = useState(null);
 
   // 載入公司列表
   useEffect(() => {
@@ -396,6 +402,35 @@ function HomePage() {
     return activeReportTab === 'financial-basics' ? financialBasicsColumns : plIncomeColumns;
   };
 
+  // Excel 匯入相關處理函式
+  const handleImportStart = () => {
+    setImportError(null);
+  };
+
+  const handleImportComplete = (data) => {
+    setParsedImportData(data);
+    setImportPreviewOpen(true);
+  };
+
+  const handleImportError = (error) => {
+    setImportError(error);
+    alert('匯入錯誤：' + error.message);
+  };
+
+  const handleImportConfirm = async (result) => {
+    setImportPreviewOpen(false);
+    setParsedImportData(null);
+
+    // 重新載入資料
+    await fetchFinancialBasicsData();
+    await fetchPlIncomeData();
+  };
+
+  const handleImportCancel = () => {
+    setImportPreviewOpen(false);
+    setParsedImportData(null);
+  };
+
   if (error) {
     return (
       <div className="container">
@@ -513,6 +548,9 @@ function HomePage() {
             />
           }
           onAddNew={handleCreate}
+          onImportStart={handleImportStart}
+          onImportComplete={handleImportComplete}
+          onImportError={handleImportError}
         />
       </div>
 
@@ -543,6 +581,14 @@ function HomePage() {
           onUndo={undoDelete}
         />
       )}
+
+      {/* Excel 匯入預覽 Modal */}
+      <ImportPreviewModal
+        isOpen={importPreviewOpen}
+        parsedData={parsedImportData}
+        onConfirm={handleImportConfirm}
+        onCancel={handleImportCancel}
+      />
     </div>
   );
 }

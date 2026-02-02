@@ -1,13 +1,20 @@
 /**
  * DataManagerTabs - 數據管理視圖切換標籤
- * 提供財務報表與損益表的切換
+ * 提供財務報表與損益表的切換，以及 Excel 匯入/匯出功能
  */
+import ExcelImportButton from './ExcelImportButton';
+import ExcelExportButton from './ExcelExportButton';
+
 function DataManagerTabs({
   activeReportTab = 'financial-basics',
   onTabChange,
   financialBasicsContent,
   plIncomeContent,
-  onAddNew
+  onAddNew,
+  onImportStart,
+  onImportComplete,
+  onImportError,
+  exportFilters = {}
 }) {
   return (
     <div>
@@ -27,12 +34,23 @@ function DataManagerTabs({
           </button>
         </div>
 
-        <button
-          className="btn-primary"
-          onClick={() => onAddNew(activeReportTab)}
-        >
-          + 新增資料
-        </button>
+        <div className="data-manager-actions">
+          <button
+            className="btn-primary"
+            onClick={() => onAddNew(activeReportTab)}
+          >
+            + 新增資料
+          </button>
+          <ExcelImportButton
+            onImportStart={onImportStart}
+            onImportComplete={onImportComplete}
+            onError={onImportError}
+          />
+          <ExcelExportButton
+            tableType={activeReportTab}
+            filters={exportFilters}
+          />
+        </div>
       </div>
 
       <div className="tab-content">
