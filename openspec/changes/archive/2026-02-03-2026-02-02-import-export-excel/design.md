@@ -384,4 +384,33 @@ export async function POST(request) {
 | 內容驗證 | 驗證 Sheet 名稱、欄位格式 |
 | SQL Injection | 使用參數化查詢 |
 | 權限控制 | 需要 JWT 驗證 |
- | 讀取大小限制 | 限制上傳檔案大小 |
+| 讀取大小限制 | 限制上傳檔案大小 |
+
+## 實作筆記
+
+### 2026-02-03 編碼問題修正
+
+**問題**: Excel 匯入時 `company_name` 和 `account_item` 欄位出現亂碼。
+
+**原因**: XLSX.js 預設使用 `raw: true` 模式讀取資料，導致中文字串編碼錯誤。
+
+**解決方案**:
+```javascript
+// 修改前
+const jsonData = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+
+// 修改後
+const jsonData = XLSX.utils.sheet_to_json(sheet, {
+  header: 1,
+  raw: false,      // 確保中文字串正確解析
+  defval: null     // 統一空值處理
+});
+```
+
+### 實作差異說明
+
+| 規格 | 實際實作 | 說明 |
+|------|----------|------|
+| Vercel Functions | Express Server (`server.js`) | 簡化本地開發與測試 |
+| 分開的匯出端點 | 統一 `/api/financial-basics/export` | 一次輸出兩個 Sheet |
+| ImportResultToast 組件 | 整合至 ImportPreviewModal | 簡化組件結構 |

@@ -194,7 +194,8 @@ export async function parseExcelFile(file) {
         // 解析財務報表
         if (hasFinancialSheet) {
           const sheet = workbook.Sheets['財務報表'];
-          const jsonData = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+          // 使用 raw: false 確保正確處理字串編碼
+          const jsonData = XLSX.utils.sheet_to_json(sheet, { header: 1, raw: false, defval: null });
 
           if (jsonData.length < 3) {
             result.warnings.push('財務報表工作表沒有資料列');
@@ -215,7 +216,15 @@ export async function parseExcelFile(file) {
             const records = dataRows.map((row, rowIndex) => {
               const record = {};
               mapping.forEach((excelIndex, columnName) => {
-                record[columnName] = row[excelIndex];
+                const value = row[excelIndex];
+                // 確保字串值被正確處理（去除多餘空白，null 轉為 undefined）
+                if (typeof value === 'string') {
+                  record[columnName] = value.trim();
+                } else if (value === null || value === undefined) {
+                  record[columnName] = undefined;
+                } else {
+                  record[columnName] = value;
+                }
               });
               return record;
             }).filter(row => row.fiscal_year && row.tax_id); // 過濾空資料
@@ -232,7 +241,8 @@ export async function parseExcelFile(file) {
         // 解析損益表
         if (hasIncomeSheet) {
           const sheet = workbook.Sheets['損益表'];
-          const jsonData = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+          // 使用 raw: false 確保正確處理字串編碼
+          const jsonData = XLSX.utils.sheet_to_json(sheet, { header: 1, raw: false, defval: null });
 
           if (jsonData.length < 3) {
             result.warnings.push('損益表工作表沒有資料列');
@@ -253,7 +263,15 @@ export async function parseExcelFile(file) {
             const records = dataRows.map((row, rowIndex) => {
               const record = {};
               mapping.forEach((excelIndex, columnName) => {
-                record[columnName] = row[excelIndex];
+                const value = row[excelIndex];
+                // 確保字串值被正確處理（去除多餘空白，null 轉為 undefined）
+                if (typeof value === 'string') {
+                  record[columnName] = value.trim();
+                } else if (value === null || value === undefined) {
+                  record[columnName] = undefined;
+                } else {
+                  record[columnName] = value;
+                }
               });
               return record;
             }).filter(row => row.fiscal_year && row.tax_id); // 過濾空資料

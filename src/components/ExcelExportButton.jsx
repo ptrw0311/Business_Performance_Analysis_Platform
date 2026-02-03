@@ -1,11 +1,11 @@
 /**
  * ExcelExportButton - Excel 匯出按鈕組件
- * 呼叫後端 API 下載 Excel 檔案
+ * 呼叫後端 API 下載 Excel 檔案（包含財務報表與損益表兩個 sheet）
  */
 import { useState } from 'react';
 
 function ExcelExportButton({
-  tableType, // 'financial-basics' or 'pl-income'
+  tableType, // 目前保留此參數以兼容，但統一使用同一個匯出端點
   filters = {},
   disabled = false
 }) {
@@ -20,12 +20,8 @@ function ExcelExportButton({
       if (filters.taxId) params.append('taxId', filters.taxId);
       if (filters.fiscalYear) params.append('fiscalYear', filters.fiscalYear);
 
-      // 呼叫匯出 API
-      const endpoint = tableType === 'financial-basics'
-        ? '/api/financial-basics/export'
-        : '/api/pl-income/export';
-
-      const response = await fetch(`${endpoint}?${params.toString()}`);
+      // 統一使用包含兩個 sheet 的匯出 API
+      const response = await fetch(`/api/financial-basics/export?${params.toString()}`);
 
       if (!response.ok) {
         throw new Error('匯出失敗');

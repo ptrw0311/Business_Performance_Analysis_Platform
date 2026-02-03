@@ -67,6 +67,13 @@ function ImportPreviewModal({
 
       setImportResult(results);
       onConfirm?.(results);
+
+      // 匯入成功後自動重新整理網頁
+      if (!results.error) {
+        setTimeout(() => {
+          window.location.reload();
+        }, 1500); // 1.5 秒後重新整理，讓使用者看到成功訊息
+      }
     } catch (error) {
       console.error('匯入錯誤:', error);
       setImportResult({
@@ -149,7 +156,7 @@ function ImportPreviewModal({
                     </div>
                   )}
 
-                  <p className="result-note">請重新整理表格以查看更新後的資料</p>
+                  <p className="result-note">🔄 頁面將自動重新整理以載入最新資料...</p>
                 </>
               )}
             </div>
