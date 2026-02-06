@@ -488,7 +488,7 @@ function HomePage() {
             onYearChange={handleYearChange}
           />
 
-          <KPIAndChartsSection company={selectedCompany} />
+          <KPIAndChartsSection company={selectedCompany} selectedYear={selectedYear} />
           <FinancialDataTable company={selectedCompany} />
 
           <div id="pdf-capture-area" style={{ position: 'absolute', left: '-9999px', top: '0', width: '794px', background: '#ffffff', padding: '40px' }}>

@@ -3,31 +3,39 @@
  * 根據「財務分析指標.xlsx > 財務比率說明」的判斷邏輯自動識別風險指標
  */
 
-// 輔助函式：取得最新年度資料
-function getLatestYear(metrics) {
-  const lastIndex = metrics.years.length - 1;
+// 輔助函式：根據選擇年度取得年度索引
+function getYearIndex(metrics, selectedYear) {
+  if (!selectedYear || !metrics.years) return metrics.years.length - 1;
+  const idx = metrics.years.indexOf(selectedYear);
+  return idx !== -1 ? idx : metrics.years.length - 1;
+}
+
+// 輔助函式：取得選擇年度資料（支援 selectedYear）
+function getSelectedYearData(metrics, selectedYear) {
+  const idx = getYearIndex(metrics, selectedYear);
   return {
-    year: metrics.years[lastIndex],
-    netProfitMargin: metrics.netProfitMargin[lastIndex],
-    grossMargin: metrics.grossMargin[lastIndex],
-    roa: metrics.roa[lastIndex],
-    currentRatio: metrics.currentRatio[lastIndex],
-    quickRatio: metrics.quickRatio[lastIndex],
-    debtEquityRatio: metrics.debtEquityRatio[lastIndex],
-    arTurnover: metrics.arTurnover[lastIndex],
-    inventoryTurnover: metrics.inventoryTurnover[lastIndex],
-    revenueGrowth: metrics.revenueGrowth[lastIndex],
-    grossProfitGrowth: metrics.grossProfitGrowth[lastIndex],
-    profitBeforeTaxGrowth: metrics.profitBeforeTaxGrowth[lastIndex],
-    sellingExpenseRatio: metrics.sellingExpenseRatio[lastIndex],
-    adminExpenseRatio: metrics.adminExpenseRatio[lastIndex],
-    rdExpenseRatio: metrics.rdExpenseRatio[lastIndex],
+    year: metrics.years[idx],
+    netProfitMargin: metrics.netProfitMargin[idx],
+    grossMargin: metrics.grossMargin[idx],
+    roa: metrics.roa[idx],
+    currentRatio: metrics.currentRatio[idx],
+    quickRatio: metrics.quickRatio[idx],
+    debtEquityRatio: metrics.debtEquityRatio[idx],
+    arTurnover: metrics.arTurnover[idx],
+    inventoryTurnover: metrics.inventoryTurnover[idx],
+    revenueGrowth: metrics.revenueGrowth[idx],
+    grossProfitGrowth: metrics.grossProfitGrowth[idx],
+    profitBeforeTaxGrowth: metrics.profitBeforeTaxGrowth[idx],
+    sellingExpenseRatio: metrics.sellingExpenseRatio[idx],
+    adminExpenseRatio: metrics.adminExpenseRatio[idx],
+    rdExpenseRatio: metrics.rdExpenseRatio[idx],
   };
 }
 
-// 輔助函式：取得前一年度資料
-function getPreviousYear(metrics) {
-  const prevIndex = metrics.years.length - 2;
+// 輔助函式：取得前一年度資料（根據選擇年度）
+function getPreviousYearData(metrics, selectedYear) {
+  const idx = getYearIndex(metrics, selectedYear);
+  const prevIndex = idx - 1;
   if (prevIndex < 0) return null;
   return {
     year: metrics.years[prevIndex],
@@ -48,27 +56,48 @@ function getPreviousYear(metrics) {
   };
 }
 
-// 輔助函式：檢查連續三年皆呈現正成長
-function isThreeYearPositiveGrowth(metrics, metricKey) {
-  const arr = metrics[metricKey];
-  if (!arr || arr.length < 3) return false;
-  const last3 = arr.slice(-3);
-  return last3.every((v, i) => v != null && (i === 0 || v > last3[i - 1]));
+// 輔助函式：檢查從選擇年度往前的連續 n 年正成長
+function isPositiveGrowth(metrics, metricKey, selectedYear, requiredYears = 3) {
+  const idx = getYearIndex(metrics, selectedYear);
+  const startIndex = Math.max(0, idx - requiredYears + 1);
+  const values = metrics[metricKey].slice(startIndex, idx + 1);
+
+  // 必須有足夠的年數才能判斷「連續 n 年」
+  if (values.length < requiredYears) return false;
+
+  for (let i = 1; i < values.length; i++) {
+    if (values[i] === null || values[i - 1] === null) return false;
+    if (values[i] <= values[i - 1]) return false;
+  }
+  return true;
 }
 
-// 輔助函式：檢查連續三年皆呈現負成長
-function isThreeYearNegativeGrowth(metrics, metricKey) {
-  const arr = metrics[metricKey];
-  if (!arr || arr.length < 3) return false;
-  const last3 = arr.slice(-3);
-  return last3.every((v, i) => v != null && (i === 0 || v < last3[i - 1]));
+// 輔助函式：檢查從選擇年度往前的連續 n 年負成長
+function isNegativeGrowth(metrics, metricKey, selectedYear, requiredYears = 3) {
+  const idx = getYearIndex(metrics, selectedYear);
+  const startIndex = Math.max(0, idx - requiredYears + 1);
+  const values = metrics[metricKey].slice(startIndex, idx + 1);
+
+  // 必須有足夠的年數才能判斷「連續 n 年」
+  if (values.length < requiredYears) return false;
+
+  for (let i = 1; i < values.length; i++) {
+    if (values[i] === null || values[i - 1] === null) return false;
+    if (values[i] >= values[i - 1]) return false;
+  }
+  return true;
 }
 
-// 輔助函式：檢查連續三年皆低於某值
-function isThreeYearBelow(metrics, metricKey, threshold) {
-  const arr = metrics[metricKey];
-  if (!arr || arr.length < 3) return false;
-  return arr.slice(-3).every(v => v != null && v < threshold);
+// 輔助函式：檢查從選擇年度往前的連續 n 年皆低於某值
+function isBelowThreshold(metrics, metricKey, threshold, selectedYear, requiredYears = 3) {
+  const idx = getYearIndex(metrics, selectedYear);
+  const startIndex = Math.max(0, idx - requiredYears + 1);
+  const values = metrics[metricKey].slice(startIndex, idx + 1);
+
+  // 必須有足夠的年數才能判斷「連續 n 年」
+  if (values.length < requiredYears) return false;
+
+  return values.every(v => v != null && v < threshold);
 }
 
 // 輔助函式：安全數值比較
@@ -87,10 +116,12 @@ function formatValue(value, unit = '') {
 
 /**
  * 計算風險指標
+ * @param {Object} metrics - 財務指標資料
+ * @param {string} selectedYear - 選擇的年度（可選）
  */
-function getConcernIndicators(metrics) {
-  const latest = getLatestYear(metrics);
-  const previous = getPreviousYear(metrics);
+function getConcernIndicators(metrics, selectedYear) {
+  const latest = getSelectedYearData(metrics, selectedYear);
+  const previous = getPreviousYearData(metrics, selectedYear);
   const concerns = [];
 
   // 1. 淨利率: 小於0%
@@ -118,7 +149,7 @@ function getConcernIndicators(metrics) {
   }
 
   // 3. 淨利率: 連續三年以上<0%
-  if (isThreeYearBelow(metrics, 'netProfitMargin', 0)) {
+  if (isBelowThreshold(metrics, 'netProfitMargin', 0, selectedYear, 3)) {
     concerns.push({
       metric: '淨利率',
       value: latest.netProfitMargin,
@@ -231,7 +262,7 @@ function getConcernIndicators(metrics) {
   }
 
   // 13. 負債淨值比: 連續三年皆呈現正成長 (負債持續增加)
-  if (isThreeYearPositiveGrowth(metrics, 'debtEquityRatio')) {
+  if (isPositiveGrowth(metrics, 'debtEquityRatio', selectedYear, 3)) {
     concerns.push({
       metric: '負債淨值比',
       value: latest.debtEquityRatio / 100,
@@ -253,7 +284,7 @@ function getConcernIndicators(metrics) {
   }
 
   // 15. 應收帳款週轉率: 連續三年皆呈現負成長
-  if (isThreeYearNegativeGrowth(metrics, 'arTurnover')) {
+  if (isNegativeGrowth(metrics, 'arTurnover', selectedYear, 3)) {
     concerns.push({
       metric: '應收週轉',
       value: latest.arTurnover,
@@ -275,7 +306,7 @@ function getConcernIndicators(metrics) {
   }
 
   // 17. 存貨周轉率: 連續三年皆呈現負成長
-  if (isThreeYearNegativeGrowth(metrics, 'inventoryTurnover')) {
+  if (isNegativeGrowth(metrics, 'inventoryTurnover', selectedYear, 3)) {
     concerns.push({
       metric: '存貨周轉',
       value: latest.inventoryTurnover,
@@ -297,7 +328,7 @@ function getConcernIndicators(metrics) {
   }
 
   // 19. 營收成長率: 連續三年<0%
-  if (isThreeYearBelow(metrics, 'revenueGrowth', 0)) {
+  if (isBelowThreshold(metrics, 'revenueGrowth', 0, selectedYear, 3)) {
     concerns.push({
       metric: '營收成長',
       value: latest.revenueGrowth,
@@ -309,7 +340,7 @@ function getConcernIndicators(metrics) {
   }
 
   // 20. 毛利成長率: 連續三年皆呈現負成長
-  if (isThreeYearNegativeGrowth(metrics, 'grossProfitGrowth')) {
+  if (isNegativeGrowth(metrics, 'grossProfitGrowth', selectedYear, 3)) {
     concerns.push({
       metric: '毛利成長',
       value: latest.grossProfitGrowth,
@@ -331,7 +362,7 @@ function getConcernIndicators(metrics) {
   }
 
   // 22. 稅前淨利成長率: 連續三年皆呈現負成長
-  if (isThreeYearNegativeGrowth(metrics, 'profitBeforeTaxGrowth')) {
+  if (isNegativeGrowth(metrics, 'profitBeforeTaxGrowth', selectedYear, 3)) {
     concerns.push({
       metric: '稅前淨利成長',
       value: latest.profitBeforeTaxGrowth,
@@ -364,7 +395,7 @@ function getConcernIndicators(metrics) {
   }
 
   // 25. 推銷費用占比: 連續三年皆呈現正成長
-  if (isThreeYearPositiveGrowth(metrics, 'sellingExpenseRatio')) {
+  if (isPositiveGrowth(metrics, 'sellingExpenseRatio', selectedYear, 3)) {
     concerns.push({
       metric: '推銷費用占比',
       value: latest.sellingExpenseRatio,
@@ -397,7 +428,7 @@ function getConcernIndicators(metrics) {
   }
 
   // 28. 管理費用佔比: 連續三年皆呈現正成長
-  if (isThreeYearPositiveGrowth(metrics, 'adminExpenseRatio')) {
+  if (isPositiveGrowth(metrics, 'adminExpenseRatio', selectedYear, 3)) {
     concerns.push({
       metric: '管理費用佔比',
       value: latest.adminExpenseRatio,
@@ -430,7 +461,7 @@ function getConcernIndicators(metrics) {
   }
 
   // 31. 研發費用佔比: 連續三年皆呈現正成長
-  if (isThreeYearPositiveGrowth(metrics, 'rdExpenseRatio')) {
+  if (isPositiveGrowth(metrics, 'rdExpenseRatio', selectedYear, 3)) {
     concerns.push({
       metric: '研發費用佔比',
       value: latest.rdExpenseRatio,
@@ -454,12 +485,12 @@ function getConcernIndicators(metrics) {
   return concerns;
 }
 
-function ConcernIndicatorsCard({ metrics }) {
+function ConcernIndicatorsCard({ metrics, selectedYear }) {
   if (!metrics || !metrics.years || metrics.years.length === 0) {
     return null;
   }
 
-  const concerns = getConcernIndicators(metrics);
+  const concerns = getConcernIndicators(metrics, selectedYear);
 
   return (
     <div className="kpi-card">
@@ -481,12 +512,12 @@ function ConcernIndicatorsCard({ metrics }) {
             {concerns.map((item, index) => (
               <li key={index} className="indicator-item">
                 <div className="indicator-item-header">
-                  <span className="indicator-name" style={{ fontSize: '11px' }}>{item.metric}</span>
-                  <span className={`indicator-value ${item.level === 'critical' ? 'concern' : 'warning'}`} style={{ marginLeft: '8px', fontSize: '11px' }}>
+                  <span className="indicator-name">{item.metric}</span>
+                  <span className={`indicator-value ${item.level === 'critical' ? 'concern' : 'warning'}`} style={{ marginLeft: '8px' }}>
                     {formatValue(item.value, item.unit)}
                   </span>
                 </div>
-                <div className="indicator-reason" style={{ fontSize: '11px' }}>
+                <div className="indicator-reason">
                   <span className="indicator-criteria">{item.criteria}</span>
                   {' · '}{item.reason}
                 </div>

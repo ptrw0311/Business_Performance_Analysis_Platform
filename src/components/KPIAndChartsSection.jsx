@@ -15,8 +15,10 @@ const API_BASE = '/api';
 /**
  * KPI 和圖表區塊容器組件
  * 包含左側 KPI 分析面板和右側 6 張圖表
+ * @param {string} company - 公司名稱
+ * @param {string} selectedYear - 選擇的年度（可選，未提供時使用最新年度）
  */
-function KPIAndChartsSection({ company }) {
+function KPIAndChartsSection({ company, selectedYear }) {
   const [metrics, setMetrics] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -87,8 +89,8 @@ function KPIAndChartsSection({ company }) {
       {/* 左側 KPI 區域 - 25% 寬度 */}
       <div className="kpi-panel">
         <ExecutiveSummaryCard metrics={metrics} />
-        <PositiveIndicatorsCard metrics={metrics} />
-        <ConcernIndicatorsCard metrics={metrics} />
+        <PositiveIndicatorsCard metrics={metrics} selectedYear={selectedYear} />
+        <ConcernIndicatorsCard metrics={metrics} selectedYear={selectedYear} />
       </div>
 
       {/* 右側圖表區域 - 75% 寬度 */}

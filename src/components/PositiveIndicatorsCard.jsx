@@ -3,31 +3,39 @@
  * 根據「財務分析指標.xlsx > 財務比率說明」的判斷邏輯自動識別正面指標
  */
 
-// 輔助函式：取得最新年度資料
-function getLatestYear(metrics) {
-  const lastIndex = metrics.years.length - 1;
+// 輔助函式：根據選擇年度取得年度索引
+function getYearIndex(metrics, selectedYear) {
+  if (!selectedYear || !metrics.years) return metrics.years.length - 1;
+  const idx = metrics.years.indexOf(selectedYear);
+  return idx !== -1 ? idx : metrics.years.length - 1;
+}
+
+// 輔助函式：取得選擇年度資料（支援 selectedYear）
+function getSelectedYearData(metrics, selectedYear) {
+  const idx = getYearIndex(metrics, selectedYear);
   return {
-    year: metrics.years[lastIndex],
-    netProfitMargin: metrics.netProfitMargin[lastIndex],
-    grossMargin: metrics.grossMargin[lastIndex],
-    roa: metrics.roa[lastIndex],
-    currentRatio: metrics.currentRatio[lastIndex],
-    quickRatio: metrics.quickRatio[lastIndex],
-    debtEquityRatio: metrics.debtEquityRatio[lastIndex],
-    arTurnover: metrics.arTurnover[lastIndex],
-    inventoryTurnover: metrics.inventoryTurnover[lastIndex],
-    revenueGrowth: metrics.revenueGrowth[lastIndex],
-    grossProfitGrowth: metrics.grossProfitGrowth[lastIndex],
-    profitBeforeTaxGrowth: metrics.profitBeforeTaxGrowth[lastIndex],
-    sellingExpenseRatio: metrics.sellingExpenseRatio[lastIndex],
-    adminExpenseRatio: metrics.adminExpenseRatio[lastIndex],
-    rdExpenseRatio: metrics.rdExpenseRatio[lastIndex],
+    year: metrics.years[idx],
+    netProfitMargin: metrics.netProfitMargin[idx],
+    grossMargin: metrics.grossMargin[idx],
+    roa: metrics.roa[idx],
+    currentRatio: metrics.currentRatio[idx],
+    quickRatio: metrics.quickRatio[idx],
+    debtEquityRatio: metrics.debtEquityRatio[idx],
+    arTurnover: metrics.arTurnover[idx],
+    inventoryTurnover: metrics.inventoryTurnover[idx],
+    revenueGrowth: metrics.revenueGrowth[idx],
+    grossProfitGrowth: metrics.grossProfitGrowth[idx],
+    profitBeforeTaxGrowth: metrics.profitBeforeTaxGrowth[idx],
+    sellingExpenseRatio: metrics.sellingExpenseRatio[idx],
+    adminExpenseRatio: metrics.adminExpenseRatio[idx],
+    rdExpenseRatio: metrics.rdExpenseRatio[idx],
   };
 }
 
-// 輔助函式：取得前一年度資料
-function getPreviousYear(metrics) {
-  const prevIndex = metrics.years.length - 2;
+// 輔助函式：取得前一年度資料（根據選擇年度）
+function getPreviousYearData(metrics, selectedYear) {
+  const idx = getYearIndex(metrics, selectedYear);
+  const prevIndex = idx - 1;
   if (prevIndex < 0) return null;
   return {
     year: metrics.years[prevIndex],
@@ -48,19 +56,32 @@ function getPreviousYear(metrics) {
   };
 }
 
-// 輔助函式：檢查連續三年皆呈現正成長
-function isThreeYearPositiveGrowth(metrics, metricKey) {
-  const arr = metrics[metricKey];
-  if (!arr || arr.length < 3) return false;
-  const last3 = arr.slice(-3);
-  return last3.every((v, i) => i === 0 || v > last3[i - 1]);
+// 輔助函式：檢查從選擇年度往前的連續 n 年正成長
+function isPositiveGrowth(metrics, metricKey, selectedYear, requiredYears = 3) {
+  const idx = getYearIndex(metrics, selectedYear);
+  const startIndex = Math.max(0, idx - requiredYears + 1);
+  const values = metrics[metricKey].slice(startIndex, idx + 1);
+
+  // 必須有足夠的年數才能判斷「連續 n 年」
+  if (values.length < requiredYears) return false;
+
+  for (let i = 1; i < values.length; i++) {
+    if (values[i] === null || values[i - 1] === null) return false;
+    if (values[i] <= values[i - 1]) return false;
+  }
+  return true;
 }
 
-// 輔助函式：檢查連續三年皆高於某值
-function isThreeYearAbove(metrics, metricKey, threshold) {
-  const arr = metrics[metricKey];
-  if (!arr || arr.length < 3) return false;
-  return arr.slice(-3).every(v => v != null && v > threshold);
+// 輔助函式：檢查從選擇年度往前的連續 n 年皆高於某值
+function isAboveThreshold(metrics, metricKey, threshold, selectedYear, requiredYears = 3) {
+  const idx = getYearIndex(metrics, selectedYear);
+  const startIndex = Math.max(0, idx - requiredYears + 1);
+  const values = metrics[metricKey].slice(startIndex, idx + 1);
+
+  // 必須有足夠的年數才能判斷「連續 n 年」
+  if (values.length < requiredYears) return false;
+
+  return values.every(v => v != null && v > threshold);
 }
 
 // 輔助函式：安全數值比較
@@ -79,10 +100,12 @@ function formatValue(value, unit = '') {
 
 /**
  * 計算正面指標
+ * @param {Object} metrics - 財務指標資料
+ * @param {string} selectedYear - 選擇的年度（可選）
  */
-function getPositiveIndicators(metrics) {
-  const latest = getLatestYear(metrics);
-  const previous = getPreviousYear(metrics);
+function getPositiveIndicators(metrics, selectedYear) {
+  const latest = getSelectedYearData(metrics, selectedYear);
+  const previous = getPreviousYearData(metrics, selectedYear);
   const positives = [];
 
   // 1. 淨利率: 大於10%
@@ -130,7 +153,7 @@ function getPositiveIndicators(metrics) {
   }
 
   // 5. ROA: 連續三年皆呈現正成長
-  if (isThreeYearPositiveGrowth(metrics, 'roa')) {
+  if (isPositiveGrowth(metrics, 'roa', selectedYear, 3)) {
     positives.push({
       metric: 'ROA',
       value: latest.roa,
@@ -240,7 +263,7 @@ function getPositiveIndicators(metrics) {
   }
 
   // 15. 營收成長率: 連續三年>10%
-  if (isThreeYearAbove(metrics, 'revenueGrowth', 10)) {
+  if (isAboveThreshold(metrics, 'revenueGrowth', 10, selectedYear, 3)) {
     positives.push({
       metric: '營收成長',
       value: latest.revenueGrowth,
@@ -251,7 +274,7 @@ function getPositiveIndicators(metrics) {
   }
 
   // 16. 毛利成長率: 連續三年皆呈現正成長
-  if (isThreeYearPositiveGrowth(metrics, 'grossProfitGrowth')) {
+  if (isPositiveGrowth(metrics, 'grossProfitGrowth', selectedYear, 3)) {
     positives.push({
       metric: '毛利成長',
       value: latest.grossProfitGrowth,
@@ -273,7 +296,7 @@ function getPositiveIndicators(metrics) {
   }
 
   // 18. 稅前淨利成長率: 連續三年皆呈現正成長
-  if (isThreeYearPositiveGrowth(metrics, 'profitBeforeTaxGrowth')) {
+  if (isPositiveGrowth(metrics, 'profitBeforeTaxGrowth', selectedYear, 3)) {
     positives.push({
       metric: '稅前淨利成長',
       value: latest.profitBeforeTaxGrowth,
@@ -297,12 +320,12 @@ function getPositiveIndicators(metrics) {
   return positives;
 }
 
-function PositiveIndicatorsCard({ metrics }) {
+function PositiveIndicatorsCard({ metrics, selectedYear }) {
   if (!metrics || !metrics.years || metrics.years.length === 0) {
     return null;
   }
 
-  const positives = getPositiveIndicators(metrics);
+  const positives = getPositiveIndicators(metrics, selectedYear);
 
   return (
     <div className="kpi-card">
