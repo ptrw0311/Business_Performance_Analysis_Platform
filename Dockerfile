@@ -43,6 +43,9 @@ COPY server.js ./
 # Copy database abstraction layer
 COPY api ./api
 
+# Copy lib directory (repository pattern)
+COPY lib ./lib
+
 EXPOSE 3000
 
 USER node
