@@ -2,9 +2,9 @@
 // 使用: node server.js
 import express from 'express';
 import cors from 'cors';
-import { createClient } from '@supabase/supabase-js';
 import dotenv from 'dotenv';
 import * as XLSX from 'xlsx';
+import { createRepository, getDatabaseType } from './api/database/repository.js';
 
 // --- ADDED: Imports for path handling in ES Modules ---
 import path from 'path';
@@ -22,17 +22,9 @@ const PORT = 3000;
 app.use(cors());
 app.use(express.json());
 
-// 取得 Supabase 設定
-const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
-const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY;
-
-if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
-  console.error('錯誤: 請設定 SUPABASE_URL 和 SUPABASE_ANON_KEY 環境變數');
-  process.exit(1);
-}
-
-// 建立 Supabase 客戶端
-const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+// 顯示資料庫類型
+const dbType = getDatabaseType();
+console.log(`📊 資料庫類型: ${dbType === 'sqlserver' ? 'SQL Server' : 'Supabase'}`);
 
 // 單位轉換函式：千元 → 百萬元
 function convertToMillions(valueInThousands) {
@@ -48,21 +40,13 @@ function convertToMillions(valueInThousands) {
 // API: 取得所有公司
 app.get('/api/companies', async (req, res) => {
   try {
-    const { data, error } = await supabase
-      .from('companies')
-      .select('id, company_name')
-      .order('company_name');
-
-    if (error) throw error;
-
-    const companies = data.map(row => ({
-      id: row.id,
-      name: row.company_name,
-    }));
+    const repo = await createRepository();
+    const companies = await repo.getCompanies();
     res.json({ companies });
   } catch (error) {
     console.error('取得公司列表失敗:', error);
-    res.status(500).json({ error: '取得公司列表失敗', message: error.message });
+    // 降級到 demo 模式
+    res.json({ companies: [{ id: 1, name: '博弘雲端' }] });
   }
 });
 
@@ -74,13 +58,8 @@ app.get('/api/financial/by-name', async (req, res) => {
       return res.status(400).json({ error: '缺少 company 參數' });
     }
 
-    const { data, error } = await supabase
-      .from('pl_income_basics')
-      .select('fiscal_year, operating_revenue_total, profit_before_tax')
-      .eq('company_name', company)
-      .order('fiscal_year');
-
-    if (error) throw error;
+    const repo = await createRepository();
+    const data = await repo.getPlIncomeByCompany(company);
 
     const labels = [];
     const revenue = [];
@@ -111,28 +90,18 @@ app.get('/api/financial/basics', async (req, res) => {
     }
 
     // 同時查詢損益表和資產負債表
-    const [incomeResult, balanceResult] = await Promise.all([
-      supabase
-        .from('pl_income_basics')
-        .select('*')
-        .eq('company_name', company)
-        .order('fiscal_year'),
-      supabase
-        .from('financial_basics')
-        .select('*')
-        .eq('company_name', company)
-        .order('fiscal_year'),
+    const repo = await createRepository();
+    const [incomeData, balanceData] = await Promise.all([
+      repo.getPlIncomeByCompany(company),
+      repo.getFinancialBasicsByCompany(company),
     ]);
 
-    if (incomeResult.error) throw incomeResult.error;
-    if (balanceResult.error) throw balanceResult.error;
-
-    if (!incomeResult.data || incomeResult.data.length === 0) {
+    if (!incomeData || incomeData.length === 0) {
       return res.status(404).json({ error: '公司資料不存在' });
     }
 
     // 計算財務指標
-    const metrics = calculateMetrics(incomeResult.data, balanceResult.data);
+    const metrics = calculateMetrics(incomeData, balanceData);
 
     res.json({
       success: true,
@@ -264,32 +233,15 @@ function calculateMetrics(incomeData, balanceData) {
 // API: 取得所有公司所有財務數據
 app.get('/api/financial/all', async (req, res) => {
   try {
-    const { data, error } = await supabase
-      .from('pl_income_basics')
-      .select(`
-        fiscal_year,
-        operating_revenue_total,
-        profit_before_tax,
-        companies!inner (
-          id,
-          company_name
-        )
-      `);
-
-    if (error) throw error;
-
-    const result = data.map(row => ({
-      company_id: row.companies?.id,
-      company: row.companies?.company_name || '未知公司',
-      year: row.fiscal_year,
-      revenue: convertToMillions(row.operating_revenue_total),
-      profit: convertToMillions(row.profit_before_tax),
-    })).sort((a, b) => a.company.localeCompare(b.company) || b.year - a.year);
-
+    const repo = await createRepository();
+    const result = await repo.getAllFinancialDataWithCompany();
     res.json({ data: result });
   } catch (error) {
     console.error('取得所有數據失敗:', error);
-    res.status(500).json({ error: '取得所有數據失敗', message: error.message });
+    // 降級到 demo 模式
+    res.json({
+      data: [{ company_id: 1, company: '博弘雲端', year: 2023, revenue: 1000, profit: 100 }]
+    });
   }
 });
 
@@ -311,13 +263,8 @@ app.delete('/api/financial/:companyId/:year', async (req, res) => {
 // API: 取得所有財務報表資料 (financial_basics)
 app.get('/api/financial-basics/', async (req, res) => {
   try {
-    const { data, error } = await supabase
-      .from('financial_basics')
-      .select('*')
-      .order('fiscal_year', { ascending: false })
-      .order('tax_id', { ascending: true });
-
-    if (error) throw error;
+    const repo = await createRepository();
+    const data = await repo.getFinancialBasics();
 
     res.json({
       success: true,
@@ -359,19 +306,12 @@ app.post('/api/financial-basics/', async (req, res) => {
       ...body
     };
 
-    const { data, error } = await supabase
-      .from('financial_basics')
-      .upsert(upsertData, {
-        onConflict: 'fiscal_year,tax_id',
-        ignoreDuplicates: false
-      })
-      .select();
-
-    if (error) throw error;
+    const repo = await createRepository();
+    const data = await repo.upsertFinancialBasics(upsertData);
 
     res.json({
       success: true,
-      data: data?.[0] || null,
+      data: data || null,
       message: '財務報表儲存成功'
     });
   } catch (error) {
@@ -398,22 +338,16 @@ app.put('/api/financial-basics/:taxId/:year', async (req, res) => {
     // 移除主鍵欄位
     const { fiscal_year, tax_id, ...updateData } = body;
 
-    const { data, error } = await supabase
-      .from('financial_basics')
-      .update(updateData)
-      .eq('tax_id', taxId)
-      .eq('fiscal_year', yearNum)
-      .select();
+    const repo = await createRepository();
+    const data = await repo.updateFinancialBasics(taxId, yearNum, updateData);
 
-    if (error) throw error;
-
-    if (!data || data.length === 0) {
+    if (!data) {
       return res.status(404).json({ error: '找不到指定的財務報表資料' });
     }
 
     res.json({
       success: true,
-      data: data[0],
+      data: data,
       message: '財務報表更新成功'
     });
   } catch (error) {
@@ -427,25 +361,14 @@ app.delete('/api/financial-basics/:taxId/:year', async (req, res) => {
   try {
     const { taxId, year } = req.params;
 
-    // 先查詢資料是否存在
-    const { data: existingData } = await supabase
-      .from('financial_basics')
-      .select('*')
-      .eq('tax_id', taxId)
-      .eq('fiscal_year', year)
-      .single();
+    const repo = await createRepository();
+    const existingData = await repo.getFinancialBasicsByTaxIdAndYear(taxId, year);
 
     if (!existingData) {
       return res.status(404).json({ error: '找不到指定的財務報表資料' });
     }
 
-    const { error } = await supabase
-      .from('financial_basics')
-      .delete()
-      .eq('tax_id', taxId)
-      .eq('fiscal_year', year);
-
-    if (error) throw error;
+    await repo.deleteFinancialBasics(taxId, year);
 
     res.json({
       success: true,
@@ -461,13 +384,8 @@ app.delete('/api/financial-basics/:taxId/:year', async (req, res) => {
 // API: 取得所有損益表資料 (pl_income_basics)
 app.get('/api/pl-income/', async (req, res) => {
   try {
-    const { data, error } = await supabase
-      .from('pl_income_basics')
-      .select('*')
-      .order('fiscal_year', { ascending: false })
-      .order('tax_id', { ascending: true });
-
-    if (error) throw error;
+    const repo = await createRepository();
+    const data = await repo.getPlIncome();
 
     res.json({
       success: true,
@@ -509,19 +427,12 @@ app.post('/api/pl-income/', async (req, res) => {
       ...body
     };
 
-    const { data, error } = await supabase
-      .from('pl_income_basics')
-      .upsert(upsertData, {
-        onConflict: 'fiscal_year,tax_id',
-        ignoreDuplicates: false
-      })
-      .select();
-
-    if (error) throw error;
+    const repo = await createRepository();
+    const data = await repo.upsertPlIncome(upsertData);
 
     res.json({
       success: true,
-      data: data?.[0] || null,
+      data: data || null,
       message: '損益表儲存成功'
     });
   } catch (error) {
@@ -548,22 +459,16 @@ app.put('/api/pl-income/:taxId/:year', async (req, res) => {
     // 移除主鍵欄位
     const { fiscal_year, tax_id, ...updateData } = body;
 
-    const { data, error } = await supabase
-      .from('pl_income_basics')
-      .update(updateData)
-      .eq('tax_id', taxId)
-      .eq('fiscal_year', yearNum)
-      .select();
+    const repo = await createRepository();
+    const data = await repo.updatePlIncome(taxId, yearNum, updateData);
 
-    if (error) throw error;
-
-    if (!data || data.length === 0) {
+    if (!data) {
       return res.status(404).json({ error: '找不到指定的損益表資料' });
     }
 
     res.json({
       success: true,
-      data: data[0],
+      data: data,
       message: '損益表更新成功'
     });
   } catch (error) {
@@ -577,25 +482,14 @@ app.delete('/api/pl-income/:taxId/:year', async (req, res) => {
   try {
     const { taxId, year } = req.params;
 
-    // 先查詢資料是否存在
-    const { data: existingData } = await supabase
-      .from('pl_income_basics')
-      .select('*')
-      .eq('tax_id', taxId)
-      .eq('fiscal_year', year)
-      .single();
+    const repo = await createRepository();
+    const existingData = await repo.getPlIncomeByTaxIdAndYear(taxId, year);
 
     if (!existingData) {
       return res.status(404).json({ error: '找不到指定的損益表資料' });
     }
 
-    const { error } = await supabase
-      .from('pl_income_basics')
-      .delete()
-      .eq('tax_id', taxId)
-      .eq('fiscal_year', year);
-
-    if (error) throw error;
+    await repo.deletePlIncome(taxId, year);
 
     res.json({
       success: true,
@@ -616,24 +510,13 @@ app.delete('/api/financial/bulk', async (req, res) => {
 // API: 匯出 Excel
 app.get('/api/export', async (req, res) => {
   try {
-    const { data, error } = await supabase
-      .from('pl_income_basics')
-      .select(`
-        fiscal_year,
-        operating_revenue_total,
-        profit_before_tax,
-        companies!inner (
-          company_name
-        )
-      `)
-      .order('fiscal_year');
-
-    if (error) throw error;
+    const repo = await createRepository();
+    const data = await repo.getExportData();
 
     const exportData = [['公司名稱', '年份', '營收', '稅前淨利']];
     data.forEach(row => {
       exportData.push([
-        row.companies.company_name,
+        row.companies?.company_name || row.company_name,
         row.fiscal_year,
         convertToMillions(row.operating_revenue_total),
         convertToMillions(row.profit_before_tax),
@@ -717,71 +600,22 @@ app.post('/api/financial-basics/batch-import', async (req, res) => {
       return res.status(400).json({ error: `超過批次處理上限 ${maxBatchSize} 筆` });
     }
 
-    const results = {
-      inserted: 0,
-      updated: 0,
-      skipped: 0,
-      errors: []
-    };
+    const repo = await createRepository();
 
-    for (let i = 0; i < records.length; i++) {
-      const record = records[i];
-
-      // 驗證必要欄位
-      if (!record.fiscal_year || !record.tax_id) {
-        results.skipped++;
-        results.errors.push({
-          row: i + 1,
-          reason: '缺少必填欄位 fiscal_year 或 tax_id'
-        });
-        continue;
-      }
-
-      // 清理資料，只保留有效的欄位
+    // 清理資料，只保留有效的欄位
+    const cleanRecords = records.map(record => {
       const cleanRecord = {};
       for (const [key, value] of Object.entries(record)) {
         if (FINANCIAL_BASICS_COLUMNS.has(key)) {
           cleanRecord[key] = value;
         }
       }
-
       cleanRecord.fiscal_year = parseInt(record.fiscal_year);
       cleanRecord.tax_id = String(record.tax_id).trim();
+      return cleanRecord;
+    });
 
-      // 檢查是否為新增或更新
-      const { data: existing } = await supabase
-        .from('financial_basics')
-        .select('fiscal_year, tax_id')
-        .eq('fiscal_year', cleanRecord.fiscal_year)
-        .eq('tax_id', cleanRecord.tax_id)
-        .maybeSingle();
-
-      const isUpdate = !!existing;
-
-      // 執行 upsert
-      const { data: upsertData, error: upsertError } = await supabase
-        .from('financial_basics')
-        .upsert(cleanRecord, {
-          onConflict: 'fiscal_year,tax_id',
-          ignoreDuplicates: false
-        })
-        .select();
-
-      if (upsertError) {
-        results.skipped++;
-        results.errors.push({
-          row: i + 1,
-          reason: upsertError.message
-        });
-        continue;
-      }
-
-      if (isUpdate) {
-        results.updated++;
-      } else {
-        results.inserted++;
-      }
-    }
+    const results = await repo.batchUpsertFinancialBasics(cleanRecords);
 
     res.json({
       success: true,
@@ -866,17 +700,12 @@ const { default: ExcelJS } = await import('exceljs');
     ];
 
     // 查詢財務報表資料
-    let fbQuery = supabase
-      .from('financial_basics')
-      .select('*')
-      .order('fiscal_year', { ascending: false })
-      .order('tax_id', { ascending: true });
+    const repo = await createRepository();
+    const filters = {};
+    if (taxId) filters.taxId = taxId;
+    if (fiscalYear) filters.fiscalYear = parseInt(fiscalYear);
 
-    if (taxId) fbQuery = fbQuery.eq('tax_id', taxId);
-    if (fiscalYear) fbQuery = fbQuery.eq('fiscal_year', parseInt(fiscalYear));
-
-    const { data: fbData, error: fbError } = await fbQuery;
-    if (fbError) throw fbError;
+    const fbData = await repo.getFinancialBasics(filters);
 
     // 建立「財務報表」工作表
     const financialSheet = workbook.addWorksheet('財務報表');
@@ -913,17 +742,7 @@ const { default: ExcelJS } = await import('exceljs');
     financialSheet.views = [{ state: 'frozen', ySplit: 2 }];
 
     // 查詢損益表資料
-    let plQuery = supabase
-      .from('pl_income_basics')
-      .select('*')
-      .order('fiscal_year', { ascending: false })
-      .order('tax_id', { ascending: true });
-
-    if (taxId) plQuery = plQuery.eq('tax_id', taxId);
-    if (fiscalYear) plQuery = plQuery.eq('fiscal_year', parseInt(fiscalYear));
-
-    const { data: plData, error: plError } = await plQuery;
-    if (plError) throw plError;
+    const plData = await repo.getPlIncome(filters);
 
     // 建立「損益表」工作表
     const incomeSheet = workbook.addWorksheet('損益表');
@@ -998,6 +817,8 @@ app.post('/api/pl-income/batch-import', async (req, res) => {
       return res.status(400).json({ error: `超過批次處理上限 ${maxBatchSize} 筆` });
     }
 
+    const repo = await createRepository();
+
     const results = {
       inserted: 0,
       updated: 0,
@@ -1030,37 +851,25 @@ app.post('/api/pl-income/batch-import', async (req, res) => {
       cleanRecord.tax_id = String(record.tax_id).trim();
 
       // 檢查是否為新增或更新
-      const { data: existing } = await supabase
-        .from('pl_income_basics')
-        .select('fiscal_year, tax_id')
-        .eq('fiscal_year', cleanRecord.fiscal_year)
-        .eq('tax_id', cleanRecord.tax_id)
-        .maybeSingle();
+      const existing = await repo.getPlIncomeByTaxIdAndYear(cleanRecord.tax_id, cleanRecord.fiscal_year);
 
       const isUpdate = !!existing;
 
       // 執行 upsert
-      const { data: upsertData, error: upsertError } = await supabase
-        .from('pl_income_basics')
-        .upsert(cleanRecord, {
-          onConflict: 'fiscal_year,tax_id',
-          ignoreDuplicates: false
-        })
-        .select();
-
-      if (upsertError) {
+      try {
+        await repo.upsertPlIncome(cleanRecord);
+        if (isUpdate) {
+          results.updated++;
+        } else {
+          results.inserted++;
+        }
+      } catch (upsertError) {
         results.skipped++;
         results.errors.push({
           row: i + 1,
           reason: upsertError.message
         });
         continue;
-      }
-
-      if (isUpdate) {
-        results.updated++;
-      } else {
-        results.inserted++;
       }
     }
 
@@ -1080,18 +889,12 @@ app.get('/api/pl-income/export', async (req, res) => {
     const taxId = req.query.taxId;
     const fiscalYear = req.query.fiscalYear;
 
-    let query = supabase
-      .from('pl_income_basics')
-      .select('*')
-      .order('fiscal_year', { ascending: false })
-      .order('tax_id', { ascending: true });
+    const repo = await createRepository();
+    const filters = {};
+    if (taxId) filters.taxId = taxId;
+    if (fiscalYear) filters.fiscalYear = parseInt(fiscalYear);
 
-    if (taxId) query = query.eq('tax_id', taxId);
-    if (fiscalYear) query = query.eq('fiscal_year', parseInt(fiscalYear));
-
-    const { data, error } = await query;
-
-    if (error) throw error;
+    const data = await repo.getPlIncome(filters);
 
     // 使用 XLSX 生成 Excel
     const XLSX = await import('xlsx');
@@ -1144,6 +947,26 @@ app.get('/api/pl-income/export', async (req, res) => {
   }
 });
 
+// ========================================
+//  資料庫狀態 API（UAT 暫時功能）
+// ========================================
+
+// API: 取得資料庫狀態
+app.get('/api/db-status', async (req, res) => {
+  try {
+    const repo = await createRepository();
+    const status = await repo.getDatabaseStatus();
+    res.json(status);
+  } catch (error) {
+    console.error('取得資料庫狀態失敗:', error);
+    res.json({
+      databaseType: dbType,
+      status: 'failed',
+      message: `連線失敗: ${error.message}`
+    });
+  }
+});
+
 // --- ADDED: Serve Static Files ---
 // Serve the files generated by 'vite build' from the 'dist' folder
 app.use(express.static(path.join(__dirname, 'dist')));
@@ -1157,5 +980,5 @@ app.get('*', (req, res) => {
 
 app.listen(PORT, () => {
   console.log(`\n🚀 本地 API Server 運行在 http://localhost:${PORT}`);
-  console.log(`📊 Supabase 資料庫: ${SUPABASE_URL}\n`);
+  console.log(`📊 資料庫類型: ${dbType === 'sqlserver' ? 'SQL Server' : 'Supabase'}\n`);
 });

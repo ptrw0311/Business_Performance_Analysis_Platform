@@ -62,3 +62,6 @@ export function successResponse(data, status = 200) {
     },
   });
 }
+
+// 匯出資料庫抽象層
+export { getDatabaseAdapter, createRepository, getDatabaseType } from './database/repository.js';

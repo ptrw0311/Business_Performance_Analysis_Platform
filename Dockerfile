@@ -40,6 +40,9 @@ COPY --from=builder /app/dist ./dist
 # Copy your Backend Source Code
 COPY server.js ./
 
+# Copy database abstraction layer
+COPY api ./api
+
 EXPOSE 3000
 
 USER node

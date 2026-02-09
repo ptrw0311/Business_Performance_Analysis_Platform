@@ -25,6 +25,7 @@
     "express": "^4.22.1",
     "html2canvas": "^1.4.1",
     "jspdf": "^2.5.2",
+    "mssql": "^12.2.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-router-dom": "^7.10.1",

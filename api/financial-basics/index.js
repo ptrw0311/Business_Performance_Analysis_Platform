@@ -1,23 +1,12 @@
 // Vercel Serverless Function: 財務報表 CRUD API
 // GET: 取得所有財務報表資料
 // POST: 新增或更新財務報表資料（upsert）
-import { getSupabaseClient, handleOptions, successResponse, errorResponse } from '../_lib.js';
+import { createRepository, handleOptions, successResponse, errorResponse } from '../_lib.js';
 
 export async function GET() {
   try {
-    const supabase = getSupabaseClient();
-
-    // 查詢所有財務報表資料
-    const { data, error } = await supabase
-      .from('financial_basics')
-      .select('*')
-      .order('fiscal_year', { ascending: false })
-      .order('tax_id', { ascending: true });
-
-    if (error) {
-      console.error('查詢財務報表失敗:', error);
-      return errorResponse('查詢財務報表失敗: ' + error.message, 500);
-    }
+    const repo = await createRepository();
+    const data = await repo.getFinancialBasics();
 
     return successResponse({
       success: true,
@@ -25,14 +14,14 @@ export async function GET() {
       count: data?.length || 0
     });
   } catch (error) {
-    console.error('GET financial-basics 錯誤:', error);
-    return errorResponse('伺服器錯誤', 500);
+    console.error('查詢財務報表失敗:', error);
+    return errorResponse('查詢財務報表失敗: ' + error.message, 500);
   }
 }
 
 export async function POST(request) {
   try {
-    const supabase = getSupabaseClient();
+    const repo = await createRepository();
     const body = await request.json();
 
     // 驗證必填欄位
@@ -60,27 +49,16 @@ export async function POST(request) {
     };
 
     // 執行 upsert（根據主鍵 fiscal_year, tax_id 判斷新增或更新）
-    const { data, error } = await supabase
-      .from('financial_basics')
-      .upsert(upsertData, {
-        onConflict: 'fiscal_year,tax_id',
-        ignoreDuplicates: false
-      })
-      .select();
-
-    if (error) {
-      console.error('Upsert 財務報表失敗:', error);
-      return errorResponse('Upsert 財務報表失敗: ' + error.message, 500);
-    }
+    const data = await repo.upsertFinancialBasics(upsertData);
 
     return successResponse({
       success: true,
-      data: data?.[0] || null,
+      data: data || null,
       message: '財務報表儲存成功'
     });
   } catch (error) {
     console.error('POST financial-basics 錯誤:', error);
-    return errorResponse('伺服器錯誤', 500);
+    return errorResponse('伺服器錯誤: ' + error.message, 500);
   }
 }
 

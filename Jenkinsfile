@@ -39,7 +39,10 @@ pipeline {
     environment {
         IMAGE_NAME = "bussiness_analyze_${params.ENV}:${params.TAG_NAME}"
         CONTAINER_NAME = "${params.CONTAINER_NAME}"
-        ENV_SECRET_ID = 'bussiness-analyze-env' 
+        // 根據環境選擇不同的 Secret File
+        ENV_SECRET_ID = params.ENV == 'prod'
+            ? 'bussiness-analyze-env-prod'
+            : 'bussiness-analyze-env'
     }
 
     options {
