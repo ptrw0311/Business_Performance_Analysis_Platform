@@ -4,7 +4,7 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import * as XLSX from 'xlsx';
-import { createRepository, getDatabaseType } from './api/database/repository.js';
+import { createRepository, getDatabaseType } from './lib/database/repository.js';
 
 // --- ADDED: Imports for path handling in ES Modules ---
 import path from 'path';
