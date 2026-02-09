@@ -1,9 +1,4 @@
 {
   "buildCommand": "npm run build",
-  "outputDirectory": "dist",
-  "functions": {
-    "api/**/*.js": {
-      "excluded": ["api/database/**", "api/_lib.js"]
-    }
-  }
+  "outputDirectory": "dist"
 }
