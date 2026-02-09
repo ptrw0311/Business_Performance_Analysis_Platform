@@ -71,7 +71,18 @@
       "mcp__dbhub__execute_sql",
       "Bash(iconv:*)",
       "Bash(npm run lint:*)",
-      "Bash(powershell:*)"
+      "Bash(powershell:*)",
+      "Bash(openspec:*)",
+      "Bash(openspec list:*)",
+      "Bash(DATABASE_TYPE=supabase npm run dev:sep:*)",
+      "Bash(set:*)",
+      "Bash(npm run dev:sep:*)",
+      "Bash(DATABASE_TYPE=supabase npm run server:*)",
+      "Bash(DATABASE_TYPE=supabase node --eval:*)",
+      "Bash(DATABASE_TYPE=supabase node:*)",
+      "Bash(DATABASE_TYPE=supabase SUPABASE_URL=$SUPABASE_URL SUPABASE_ANON_KEY=$SUPABASE_ANON_KEY node:*)",
+      "Bash(cmd //c \"taskkill /F /PID 6344 & taskkill /F /IM node.exe\")",
+      "Bash(tasklist:*)"
     ]
   }
 }

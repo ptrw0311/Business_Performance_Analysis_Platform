@@ -62,6 +62,31 @@ export async function POST(request) {
   }
 }
 
+// DELETE: 刪除指定年度的財務報表資料
+// 使用 query string: ?tax_id=xxx&fiscal_year=xxx
+export async function DELETE(request) {
+  try {
+    const url = new URL(request.url);
+    const taxId = url.searchParams.get('tax_id');
+    const fiscalYear = url.searchParams.get('fiscal_year');
+
+    if (!taxId || !fiscalYear) {
+      return errorResponse('缺少必填參數: tax_id, fiscal_year', 400);
+    }
+
+    const repo = await createRepository();
+    await repo.deleteFinancialBasics(taxId, parseInt(fiscalYear));
+
+    return successResponse({
+      success: true,
+      message: '財務報表刪除成功'
+    });
+  } catch (error) {
+    console.error('DELETE financial-basics 錯誤:', error);
+    return errorResponse('刪除失敗: ' + error.message, 500);
+  }
+}
+
 export async function OPTIONS() {
   return handleOptions();
 }

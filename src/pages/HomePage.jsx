@@ -324,8 +324,8 @@ function HomePage() {
     try {
       // 根據當前 Tab 決定呼叫哪個 API
       const apiUrl = activeReportTab === 'financial-basics'
-        ? `${API_BASE}/financial-basics/${deletingRecord.tax_id}/${deletingRecord.fiscal_year}`
-        : `${API_BASE}/pl-income/${deletingRecord.tax_id}/${deletingRecord.fiscal_year}`;
+        ? `${API_BASE}/financial-basics/?tax_id=${deletingRecord.tax_id}&fiscal_year=${deletingRecord.fiscal_year}`
+        : `${API_BASE}/pl-income/?tax_id=${deletingRecord.tax_id}&fiscal_year=${deletingRecord.fiscal_year}`;
 
       const response = await fetch(apiUrl, { method: 'DELETE' });
 
