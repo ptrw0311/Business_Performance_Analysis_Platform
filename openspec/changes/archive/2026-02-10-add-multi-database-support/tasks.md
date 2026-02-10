@@ -60,8 +60,8 @@ SUPABASE_ANON_KEY=eyJxxx...
 - [ ] 7.5 確認 Vercel 顯示 `🟢 DB: Supabase`
 - [ ] 7.6 確認 Jenkins 顯示 `🟢 DB: SQL Server`
 
-## 8. UAT 完成後清理（待執行）
-- [ ] 8.1 移除 `api/db-status.js`
-- [ ] 8.2 移除 `src/components/DatabaseStatusIndicator.jsx`
-- [ ] 8.3 從 `src/pages/HomePage.jsx` 移除資料庫狀態顯示元件
+## 8. UAT 完成後清理
+- [x] 8.1 從 `src/pages/HomePage.jsx` 移除資料庫狀態顯示元件
+- [ ] 8.2 移除 `src/components/DatabaseStatusIndicator.jsx`（組件檔案保留備用）
+- [ ] 8.3 移除 `api/db-status.js`（API 端點保留備用）
 - [ ] 8.4 從 `server.js` 移除資料庫狀態 API 端點
