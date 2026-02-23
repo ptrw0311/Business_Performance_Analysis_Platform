@@ -7,6 +7,20 @@ import { ResponsiveBar } from '@nivo/bar';
  * 確保長條圖與折線圖完美對齊
  */
 function FinanceChart({ labels, revenue, profit, selectedYear, onYearChange }) {
+
+  /**
+   * 根據長條圖實測位置返回標籤應該對齊的百分比位置
+   * 測量結果（相對於標籤容器 margin-values-compact）：
+   * - Index 0 (2020): -4%
+   * - Index 1 (2021): 19.2%
+   * - Index 2 (2022): 42.3%
+   * - Index 3 (2023): 65.4%
+   * - Index 4 (2024): 88.6%
+   */
+  const getBarCenterPosition = (index) => {
+    const positions = [-4, 19.2, 42.3, 65.4, 88.6];
+    return positions[index] || ((index + 0.5) * 20); // 降級處理：如果索引超出範圍，使用原來的計算方式
+  };
   // 準備長條圖資料（營收）
   const barData = useMemo(() => {
     if (!labels || !revenue) return [];
@@ -299,18 +313,22 @@ function FinanceChart({ labels, revenue, profit, selectedYear, onYearChange }) {
         />
       </div>
 
-      {/* 底部淨利率標籤區 */}
-      <div className="margin-labels-section">
-        <div className="margin-title">淨利率 (Net profit margin)</div>
-        <div className="margin-values">
-          {margins.map((item) => (
+      {/* 底部淨利率標籤區 - 精簡版 */}
+      <div className="margin-labels-section-compact">
+        <div className="margin-title-compact">淨利率%</div>
+        <div className="margin-values-compact">
+          {margins.map((item, index) => (
             <div
               key={item.year}
-              className={`margin-value ${item.year === selectedYear ? 'margin-value-active' : ''}`}
+              className={`margin-value-compact ${item.year === selectedYear ? 'margin-value-active' : ''}`}
               onClick={() => onYearChange(item.year)}
+              style={{
+                position: 'absolute',
+                left: `${getBarCenterPosition(index)}%` // 使用實測的長條圖中心位置：-4%, 19.2%, 42.3%, 65.4%, 88.6%
+              }}
             >
-              <span className="margin-year">{item.year}</span>
-              <span className="margin-percent">{item.margin}</span>
+              <div className="margin-percent-compact">{item.margin}</div>
+              <div className="margin-year-compact">{item.year}</div>
             </div>
           ))}
         </div>

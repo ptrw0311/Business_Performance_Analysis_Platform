@@ -1,8 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import CompanySelector from '../components/CompanySelector';
 import StatCards from '../components/StatCards';
-import InsightPanel from '../components/InsightPanel';
-import FinanceChart from '../components/FinanceChart';
+import InsightChartSection from '../components/InsightChartSection';
 import KPIAndChartsSection from '../components/KPIAndChartsSection';
 import FinancialDataTable from '../components/FinancialDataTable';
 import DataManagerTabs from '../components/DataManagerTabs';
@@ -472,15 +471,8 @@ function HomePage() {
             profit={financialData.profit}
           />
 
-          <InsightPanel
-            labels={financialData.labels}
-            revenue={financialData.revenue}
-            profit={financialData.profit}
-            selectedYear={selectedYear}
-            onYearChange={handleYearChange}
-          />
-
-          <FinanceChart
+          {/* 績效洞察與圖表並排區塊 (25:75) */}
+          <InsightChartSection
             labels={financialData.labels}
             revenue={financialData.revenue}
             profit={financialData.profit}
