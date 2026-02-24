@@ -10,7 +10,6 @@ import EditModal from '../components/EditModal';
 import DeleteConfirmDialog from '../components/DeleteConfirmDialog';
 import UndoToast from '../components/UndoToast';
 import ImportPreviewModal from '../components/ImportPreviewModal';
-import DatabaseStatusIndicator from '../components/DatabaseStatusIndicator';
 import robotLogo from '../assets/robot.png';
 
 // API 基礎 URL（開發時使用 proxy，生產時直接使用）
@@ -446,8 +445,6 @@ function HomePage() {
 
   return (
     <div className="container" id="capture-area">
-      {/* 資料庫狀態顯示 */}
-      <DatabaseStatusIndicator />
       <div className="title-box">
         <div className="title-row">
           <img src={robotLogo} alt="FinRobot" className="title-logo" />
