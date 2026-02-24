@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 
 const API_BASE = '/api';
+const AI_API_URL = 'http://10.1.110.11:7814/v1/finance/analyze';
 
 function ExecutiveSummaryCard({ company, selectedYear }) {
   const [summary, setSummary] = useState(null);
@@ -23,20 +24,63 @@ function ExecutiveSummaryCard({ company, selectedYear }) {
     setError(null);
 
     try {
-      const response = await fetch(
-        `${API_BASE}/ai-summary?company=${encodeURIComponent(company)}&year=${selectedYear}`
+      // 步驟 1: 先從後端 API 查詢 tax_id
+      const taxIdResponse = await fetch(
+        `${API_BASE}/financial-basics/taxid?company=${encodeURIComponent(company)}`
       );
 
-      const result = await response.json();
-
-      if (response.ok && result.success) {
-        setSummary(result.data.summary);
-      } else {
-        setError(result.error || '無法載入 AI 分析');
+      if (!taxIdResponse.ok) {
+        throw new Error('無法取得公司統一編號');
       }
+
+      const taxIdResult = await taxIdResponse.json();
+
+      if (!taxIdResult.success || !taxIdResult.data || !taxIdResult.data.tax_id) {
+        throw new Error('找不到該公司的統一編號');
+      }
+
+      const taxId = taxIdResult.data.tax_id;
+
+      // 步驟 2: 直接呼叫企業內 AI API（瀏覽器 → 內網）
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000);
+
+      const aiResponse = await fetch(AI_API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          tax_id: taxId,
+          fiscal_year: parseInt(selectedYear),
+          model_mode: 'local'
+        }),
+        signal: controller.signal
+      });
+
+      clearTimeout(timeoutId);
+
+      if (!aiResponse.ok) {
+        throw new Error(`AI API 回應錯誤: ${aiResponse.status}`);
+      }
+
+      const aiResult = await aiResponse.json();
+
+      if (aiResult.summary) {
+        setSummary(aiResult.summary);
+      } else {
+        throw new Error('AI API 未返回摘要內容');
+      }
+
     } catch (err) {
       console.error('載入 AI 摘要失敗:', err);
-      setError('AI 分析服務暫時無法使用');
+
+      // 根據錯誤類型顯示不同的錯誤訊息
+      if (err.name === 'AbortError') {
+        setError('AI 分析請求逾時');
+      } else if (err.message.includes('Failed to fetch') || err.message.includes('NetworkError')) {
+        setError('AI 分析服務無法連線（僅支援企業內網）');
+      } else {
+        setError(err.message || 'AI 分析服務暫時無法使用');
+      }
     } finally {
       setIsLoading(false);
     }

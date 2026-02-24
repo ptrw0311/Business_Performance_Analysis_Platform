@@ -277,6 +277,39 @@ app.get('/api/financial-basics/', async (req, res) => {
   }
 });
 
+// API: 取得公司統一編號 (financial_basics tax_id)
+app.get('/api/financial-basics/taxid', async (req, res) => {
+  try {
+    const companyName = req.query.company;
+
+    // 驗證參數
+    if (!companyName) {
+      return res.status(400).json({ error: '缺少必填參數: company' });
+    }
+
+    const repo = await createRepository();
+    const financialData = await repo.getFinancialBasics({ companyName });
+
+    if (!financialData || financialData.length === 0) {
+      return res.status(404).json({ error: '找不到該公司的財務資料' });
+    }
+
+    // 使用第一筆資料的 tax_id（同公司不同年度的 tax_id 相同）
+    const taxId = financialData[0].tax_id;
+
+    res.json({
+      success: true,
+      data: {
+        company: companyName,
+        tax_id: taxId
+      }
+    });
+  } catch (error) {
+    console.error('查詢統一編號失敗:', error);
+    res.status(500).json({ error: '查詢統一編號失敗: ' + error.message });
+  }
+});
+
 // API: 新增或更新財務報表資料 (financial_basics upsert)
 app.post('/api/financial-basics/', async (req, res) => {
   try {
