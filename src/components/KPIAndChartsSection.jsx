@@ -88,7 +88,7 @@ function KPIAndChartsSection({ company, selectedYear }) {
     <div className="kpi-charts-section">
       {/* 左側 KPI 區域 - 25% 寬度 */}
       <div className="kpi-panel">
-        <ExecutiveSummaryCard metrics={metrics} />
+        <ExecutiveSummaryCard company={company} selectedYear={selectedYear} />
         <PositiveIndicatorsCard metrics={metrics} selectedYear={selectedYear} />
         <ConcernIndicatorsCard metrics={metrics} selectedYear={selectedYear} />
       </div>

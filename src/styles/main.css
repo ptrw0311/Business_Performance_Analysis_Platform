@@ -3026,3 +3026,122 @@ select {
   transform: translateY(-2px);
   box-shadow: 0 12px 24px rgba(59, 130, 246, 0.12);
 }
+
+/* ========================================
+   AI 摘要功能樣式
+   ======================================== */
+
+/* AI 摘要載入狀態 */
+.ai-summary-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 16px;
+  gap: 12px;
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.ai-summary-loading .loading-spinner {
+  width: 24px;
+  height: 24px;
+  border: 3px solid var(--border-light);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* AI 摘要錯誤狀態 */
+.ai-summary-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  color: var(--danger);
+  font-size: 13px;
+  text-align: center;
+}
+
+.ai-summary-error .retry-button {
+  padding: 6px 16px;
+  background: var(--accent);
+  color: white;
+  border: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  transition: background-color var(--transition-base);
+}
+
+.ai-summary-error .retry-button:hover {
+  background: var(--accent-dark);
+}
+
+/* AI 摘要內容 */
+.ai-summary-content {
+  padding: 12px 0;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.ai-summary-section-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 16px 0 8px 0;
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.ai-summary-section-title:first-child {
+  margin-top: 0;
+}
+
+.ai-summary-list {
+  margin: 8px 0;
+  padding-left: 20px;
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--text-primary);
+}
+
+.ai-summary-list li {
+  margin-bottom: 6px;
+}
+
+.ai-summary-content p {
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--text-primary);
+  margin-bottom: 10px;
+}
+
+.ai-summary-content p:last-child {
+  margin-bottom: 0;
+}
+
+/* 滾動條樣式 */
+.ai-summary-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.ai-summary-content::-webkit-scrollbar-track {
+  background: var(--bg-secondary);
+  border-radius: 3px;
+}
+
+.ai-summary-content::-webkit-scrollbar-thumb {
+  background: var(--border-medium);
+  border-radius: 3px;
+}
+
+.ai-summary-content::-webkit-scrollbar-thumb:hover {
+  background: var(--border-dark);
+}
