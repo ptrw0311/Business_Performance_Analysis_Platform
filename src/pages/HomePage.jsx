@@ -448,7 +448,7 @@ function HomePage() {
       <div className="title-box">
         <div className="title-row">
           <img src={robotLogo} alt="FinRobot" className="title-logo" />
-          <h2>財務分析機器人</h2>
+          <h2>聯稽財務分析機器人</h2>
         </div>
         <p className="subtitle-text">Financial Analysis Bot</p>
       </div>
