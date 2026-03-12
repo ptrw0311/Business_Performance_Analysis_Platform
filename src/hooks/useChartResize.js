@@ -1,51 +1,35 @@
 import { useState, useEffect, useRef } from 'react';
 
 /**
- * Hook for handling chart resize and browser zoom
- * Monitors container size changes and browser zoom level
- * Forces chart re-render when changes are detected
+ * 偵測容器大小變更與瀏覽器縮放，強制圖表重新渲染
+ * Nivo 的 ResponsiveWrapper 在瀏覽器縮放後可能無法正確恢復尺寸，
+ * 此 hook 透過 ResizeObserver 偵測容器尺寸變化並用 key 強制重新掛載圖表
  *
- * @param {React.RefObject} containerRef - Reference to the chart container element
- * @returns {number} - Unique key for forcing re-render
+ * @param {React.RefObject} containerRef - 圖表容器元素的 ref
+ * @returns {number} - 當尺寸改變時遞增的 key，用於強制重新渲染
  */
 export function useChartResize(containerRef) {
-  const [, forceUpdate] = useState(0);
-  const resizeObserverRef = useRef(null);
-  const lastScaleRef = useRef(1);
+  const [key, setKey] = useState(0);
+  const debounceRef = useRef(null);
 
   useEffect(() => {
     if (!containerRef.current) return;
 
-    // Setup ResizeObserver
-    const observer = new ResizeObserver(() => {
-      forceUpdate(prev => prev + 1);
-    });
-
-    observer.observe(containerRef.current);
-    resizeObserverRef.current = observer;
-
-    // Setup visualViewport listener for zoom detection
-    const handleViewportResize = () => {
-      const currentScale = window.visualViewport?.scale || 1;
-      if (currentScale !== lastScaleRef.current) {
-        lastScaleRef.current = currentScale;
-        forceUpdate(prev => prev + 1);
-      }
+    const debouncedUpdate = () => {
+      clearTimeout(debounceRef.current);
+      debounceRef.current = setTimeout(() => {
+        setKey(prev => prev + 1);
+      }, 150);
     };
 
-    if (window.visualViewport) {
-      window.visualViewport.addEventListener('resize', handleViewportResize);
-    }
+    const observer = new ResizeObserver(debouncedUpdate);
+    observer.observe(containerRef.current);
 
     return () => {
-      if (resizeObserverRef.current) {
-        resizeObserverRef.current.disconnect();
-      }
-      if (window.visualViewport) {
-        window.visualViewport.removeEventListener('resize', handleViewportResize);
-      }
+      observer.disconnect();
+      clearTimeout(debounceRef.current);
     };
   }, [containerRef]);
 
-  return Date.now(); // Return a unique key for forcing re-render
+  return key;
 }
