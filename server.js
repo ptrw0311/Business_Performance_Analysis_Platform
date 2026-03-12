@@ -602,16 +602,27 @@ app.post('/api/financial-basics/batch-import', async (req, res) => {
 
     const repo = await createRepository();
 
-    // 清理資料，只保留有效的欄位
+    // 不需要數值轉換的文字欄位
+    const FB_TEXT_FIELDS = new Set(['tax_id', 'company_name', 'account_item']);
+
+    // 清理資料，只保留有效的欄位，並轉換型別
     const cleanRecords = records.map(record => {
       const cleanRecord = {};
       for (const [key, value] of Object.entries(record)) {
-        if (FINANCIAL_BASICS_COLUMNS.has(key)) {
-          cleanRecord[key] = value;
+        if (!FINANCIAL_BASICS_COLUMNS.has(key)) continue;
+        if (value === null || value === undefined || value === '') {
+          cleanRecord[key] = null;
+          continue;
+        }
+        if (key === 'fiscal_year') {
+          cleanRecord[key] = parseInt(value);
+        } else if (FB_TEXT_FIELDS.has(key)) {
+          cleanRecord[key] = String(value).trim();
+        } else {
+          const num = typeof value === 'number' ? value : parseFloat(value);
+          cleanRecord[key] = isNaN(num) ? null : num;
         }
       }
-      cleanRecord.fiscal_year = parseInt(record.fiscal_year);
-      cleanRecord.tax_id = String(record.tax_id).trim();
       return cleanRecord;
     });
 
@@ -839,16 +850,24 @@ app.post('/api/pl-income/batch-import', async (req, res) => {
         continue;
       }
 
-      // 清理資料，只保留有效的欄位
+      // 清理資料，只保留有效的欄位，並轉換型別
+      const PL_TEXT_FIELDS = new Set(['tax_id', 'company_name', 'account_item']);
       const cleanRecord = {};
       for (const [key, value] of Object.entries(record)) {
-        if (PL_INCOME_BASICS_COLUMNS.has(key)) {
-          cleanRecord[key] = value;
+        if (!PL_INCOME_BASICS_COLUMNS.has(key)) continue;
+        if (value === null || value === undefined || value === '') {
+          cleanRecord[key] = null;
+          continue;
+        }
+        if (key === 'fiscal_year') {
+          cleanRecord[key] = parseInt(value);
+        } else if (PL_TEXT_FIELDS.has(key)) {
+          cleanRecord[key] = String(value).trim();
+        } else {
+          const num = typeof value === 'number' ? value : parseFloat(value);
+          cleanRecord[key] = isNaN(num) ? null : num;
         }
       }
-
-      cleanRecord.fiscal_year = parseInt(record.fiscal_year);
-      cleanRecord.tax_id = String(record.tax_id).trim();
 
       // 檢查是否為新增或更新
       const existing = await repo.getPlIncomeByTaxIdAndYear(cleanRecord.tax_id, cleanRecord.fiscal_year);
