@@ -2601,6 +2601,8 @@ select {
   min-width: 100px;
   border-left: 2px solid var(--border-medium);
   border-right: none;
+  z-index: 25;
+  background: var(--bg-tertiary);
 }
 
 .data-table-multi-column tbody tr {
@@ -2618,6 +2620,8 @@ select {
   color: var(--text-primary);
   white-space: nowrap;
   border-right: 1px solid var(--border-light);
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .data-table-multi-column tbody td.sticky {
@@ -2639,6 +2643,9 @@ select {
   right: 0;
   border-left: 2px solid var(--border-medium);
   border-right: none;
+  z-index: 25;
+  background: var(--bg-primary);
+  min-width: 100px;
 }
 
 /* 搜尋輸入框樣式 */
