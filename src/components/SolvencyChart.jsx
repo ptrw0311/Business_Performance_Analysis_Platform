@@ -1,6 +1,7 @@
-import { useMemo } from 'react';
+import { useMemo, useRef } from 'react';
 import { ResponsiveBar } from '@nivo/bar';
 import { scaleLinear as d3ScaleLinear } from 'd3-scale';
+import { useChartResize } from '../hooks/useChartResize';
 
 /**
  * 償債結構圖表 (Solvency)
@@ -8,6 +9,8 @@ import { scaleLinear as d3ScaleLinear } from 'd3-scale';
  * 使用雙 Y 軸設計
  */
 function SolvencyChart({ metrics }) {
+  const containerRef = useRef(null);
+  const resizeKey = useChartResize(containerRef);
   if (!metrics || !metrics.years || metrics.years.length === 0) {
     return (
       <div className="chart-container">
@@ -163,7 +166,7 @@ function SolvencyChart({ metrics }) {
   };
 
   return (
-    <div className="chart-container" style={{ height: '320px', position: 'relative' }}>
+    <div className="chart-container" style={{ height: '320px', position: 'relative' }} ref={containerRef}>
       <div className="chart-header">
         <h4 className="chart-title">償債結構 (Solvency)</h4>
       </div>
@@ -171,6 +174,7 @@ function SolvencyChart({ metrics }) {
       {/* 使用統一的 ResponsiveBar */}
       <div style={{ position: 'absolute', top: 60, left: 20, right: 40, bottom: 60 }}>
         <ResponsiveBar
+          key={resizeKey}
           data={chartData}
           keys={['currentRatio']}  // 只用流動比來生成 bars
           indexBy="year"

@@ -1,5 +1,6 @@
-import { useMemo } from 'react';
+import { useMemo, useRef } from 'react';
 import { ResponsiveBar } from '@nivo/bar';
+import { useChartResize } from '../hooks/useChartResize';
 
 /**
  * FinanceChart - 使用 Nivo 建立混合圖表
@@ -7,6 +8,8 @@ import { ResponsiveBar } from '@nivo/bar';
  * 確保長條圖與折線圖完美對齊
  */
 function FinanceChart({ labels, revenue, profit, selectedYear, onYearChange }) {
+  const containerRef = useRef(null);
+  const resizeKey = useChartResize(containerRef);
 
   /**
    * 根據長條圖實測位置返回標籤應該對齊的百分比位置
@@ -95,7 +98,7 @@ function FinanceChart({ labels, revenue, profit, selectedYear, onYearChange }) {
   }
 
   return (
-    <div className="chart-nivo-wrapper">
+    <div className="chart-nivo-wrapper" ref={containerRef}>
       {/* 圖例 */}
       <div className="chart-legend">
         <div className="legend-item">
@@ -114,6 +117,7 @@ function FinanceChart({ labels, revenue, profit, selectedYear, onYearChange }) {
       {/* 單一圖表容器 */}
       <div className="chart-nivo-container">
         <ResponsiveBar
+          key={resizeKey}
           data={barData}
           keys={['revenue']}
           indexBy="year"

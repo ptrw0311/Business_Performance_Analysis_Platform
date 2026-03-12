@@ -1,6 +1,7 @@
-import { useMemo } from 'react';
+import { useMemo, useRef } from 'react';
 import { ResponsiveLine } from '@nivo/line';
 import { transformMetricsToNivoData, getChartColors, getCommonChartConfig, formatValue } from './charts/chartUtils';
+import { useChartResize } from '../hooks/useChartResize';
 
 /**
  * 費用率趨勢圖表 (Expense Trend)
@@ -37,6 +38,9 @@ const PointLabelsLayer = ({ points }) => {
   }
 };
 function ExpenseTrendChart({ metrics }) {
+  const containerRef = useRef(null);
+  const resizeKey = useChartResize(containerRef);
+
   if (!metrics || !metrics.years || metrics.years.length === 0) {
     return (
       <div className="chart-container">
@@ -66,11 +70,12 @@ function ExpenseTrendChart({ metrics }) {
   const commonConfig = useMemo(() => getCommonChartConfig(), []);
 
   return (
-    <div className="chart-container" style={{ height: '320px' }}>
+    <div className="chart-container" style={{ height: '320px' }} ref={containerRef}>
       <div className="chart-header">
         <h4 className="chart-title">費用率趨勢 (Expense Trend)</h4>
       </div>
       <ResponsiveLine
+        key={resizeKey}
         data={data}
         yScale={{
           type: 'linear',

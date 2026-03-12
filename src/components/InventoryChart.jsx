@@ -1,6 +1,7 @@
-import { useMemo } from 'react';
+import { useMemo, useRef } from 'react';
 import { ResponsiveBar } from '@nivo/bar';
 import { getChartColors, getCommonChartConfig, formatValue, filterOutliers } from './charts/chartUtils';
+import { useChartResize } from '../hooks/useChartResize';
 
 /**
  * 存貨週轉圖表 (Inventory)
@@ -46,6 +47,9 @@ const BarLabelsLayer = ({ bars }) => {
 };
 
 function InventoryChart({ metrics }) {
+  const containerRef = useRef(null);
+  const resizeKey = useChartResize(containerRef);
+
   if (!metrics || !metrics.years || metrics.years.length === 0) {
     return (
       <div className="chart-container">
@@ -70,11 +74,12 @@ function InventoryChart({ metrics }) {
   const commonConfig = useMemo(() => getCommonChartConfig(), []);
 
   return (
-    <div className="chart-container">
+    <div className="chart-container" ref={containerRef}>
       <div className="chart-header">
         <h4 className="chart-title">存貨週轉 (Inventory)</h4>
       </div>
       <ResponsiveBar
+        key={resizeKey}
         {...commonConfig}
         data={data}
         keys={['value']}

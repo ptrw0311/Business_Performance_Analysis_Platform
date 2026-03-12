@@ -1,12 +1,15 @@
-import { useMemo } from 'react';
+import { useMemo, useRef } from 'react';
 import { ResponsiveLine } from '@nivo/line';
 import { transformMetricsToNivoData, formatValue } from './charts/chartUtils';
+import { useChartResize } from '../hooks/useChartResize';
 
 /**
  * 獲利能力圖表 (Profitability)
  * 顯示淨利率、毛利率的趨勢
  */
 function ProfitabilityChart({ metrics }) {
+  const containerRef = useRef(null);
+  const resizeKey = useChartResize(containerRef);
   if (!metrics || !metrics.years || metrics.years.length === 0) {
     return (
       <div className="chart-container">
@@ -98,11 +101,12 @@ function ProfitabilityChart({ metrics }) {
   };
 
   return (
-    <div className="chart-container" style={{ height: '320px' }}>
+    <div className="chart-container" style={{ height: '320px' }} ref={containerRef}>
       <div className="chart-header">
         <h4 className="chart-title">獲利能力 (Profitability)</h4>
       </div>
       <ResponsiveLine
+        key={resizeKey}
         data={data}
         margin={{ top: 30, right: 20, bottom: 60, left: 20 }}
         yScale={{

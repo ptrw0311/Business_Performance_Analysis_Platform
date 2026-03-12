@@ -1,7 +1,8 @@
-import { useMemo } from 'react';
+import { useMemo, useRef } from 'react';
 import { ResponsiveBar } from '@nivo/bar';
 import { ResponsiveLine } from '@nivo/line';
 import { getChartColors, getCommonChartConfig, formatValue } from './charts/chartUtils';
+import { useChartResize } from '../hooks/useChartResize';
 
 /**
  * 經營效率圖表 (AR Efficiency)
@@ -44,6 +45,9 @@ const BarLabelsLayer = ({ bars }) => {
 };
 
 function AREfficiencyChart({ metrics }) {
+  const containerRef = useRef(null);
+  const resizeKey = useChartResize(containerRef);
+
   if (!metrics || !metrics.years || metrics.years.length === 0) {
     return (
       <div className="chart-container">
@@ -71,11 +75,12 @@ function AREfficiencyChart({ metrics }) {
   const commonConfig = useMemo(() => getCommonChartConfig(), []);
 
   return (
-    <div className="chart-container">
+    <div className="chart-container" ref={containerRef}>
       <div className="chart-header">
         <h4 className="chart-title">經營效率 (AR Efficiency)</h4>
       </div>
       <ResponsiveBar
+        key={resizeKey}
         {...commonConfig}
         data={arTurnoverData}
         keys={['value']}

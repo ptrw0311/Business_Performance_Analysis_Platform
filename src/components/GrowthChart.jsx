@@ -1,6 +1,7 @@
-import { useMemo } from 'react';
+import { useMemo, useRef } from 'react';
 import { ResponsiveLine } from '@nivo/line';
 import { transformMetricsToNivoData, formatValue } from './charts/chartUtils';
+import { useChartResize } from '../hooks/useChartResize';
 
 /**
  * 成長動能圖表 (Growth)
@@ -39,6 +40,9 @@ const PointLabelsLayer = ({ points }) => {
 };
 
 function GrowthChart({ metrics }) {
+  const containerRef = useRef(null);
+  const resizeKey = useChartResize(containerRef);
+
   if (!metrics || !metrics.years || metrics.years.length === 0) {
     return (
       <div className="chart-container">
@@ -73,11 +77,12 @@ function GrowthChart({ metrics }) {
   };
 
   return (
-    <div className="chart-container" style={{ height: '320px' }}>
+    <div className="chart-container" style={{ height: '320px' }} ref={containerRef}>
       <div className="chart-header">
         <h4 className="chart-title">成長動能 (Growth)</h4>
       </div>
       <ResponsiveLine
+        key={resizeKey}
         data={data}
         yScale={{
           type: 'linear',
