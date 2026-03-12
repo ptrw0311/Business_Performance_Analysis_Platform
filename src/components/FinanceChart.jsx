@@ -1,4 +1,4 @@
-import { useMemo, useRef } from 'react';
+import React, { useMemo, useRef, useState, useEffect } from 'react';
 import { ResponsiveBar } from '@nivo/bar';
 import { useChartResize } from '../hooks/useChartResize';
 
@@ -11,19 +11,10 @@ function FinanceChart({ labels, revenue, profit, selectedYear, onYearChange }) {
   const containerRef = useRef(null);
   const resizeKey = useChartResize(containerRef);
 
-  /**
-   * 根據長條圖實測位置返回標籤應該對齊的百分比位置
-   * 測量結果（相對於標籤容器 margin-values-compact）：
-   * - Index 0 (2020): -4%
-   * - Index 1 (2021): 19.2%
-   * - Index 2 (2022): 42.3%
-   * - Index 3 (2023): 65.4%
-   * - Index 4 (2024): 88.6%
-   */
-  const getBarCenterPosition = (index) => {
-    const positions = [-4, 19.2, 42.3, 65.4, 88.6];
-    return positions[index] || ((index + 0.5) * 20); // 降級處理：如果索引超出範圍，使用原來的計算方式
-  };
+  // 動態追蹤長條圖位置
+  const [barPositions, setBarPositions] = useState([]);
+  const [isPositionReady, setIsPositionReady] = useState(false);
+
   // 準備長條圖資料（營收）
   const barData = useMemo(() => {
     if (!labels || !revenue) return [];
@@ -63,6 +54,73 @@ function FinanceChart({ labels, revenue, profit, selectedYear, onYearChange }) {
   const lineMaxValue = useMemo(() => {
     return maxProfit * 3;
   }, [maxProfit]);
+
+  // 使用 useEffect 在圖表渲染後計算長條圖位置
+  useEffect(() => {
+    // 當 labels 改變時，重置狀態
+    setIsPositionReady(false);
+    setBarPositions([]);
+
+    if (!containerRef.current || !labels.length) return;
+
+    // 等待圖表渲染完成
+    const timer = setTimeout(() => {
+      const container = containerRef.current;
+      if (!container) return;
+
+      // 獲取圖表容器和 SVG
+      const chartContainer = container.querySelector('.chart-nivo-container');
+      const svgElement = chartContainer?.querySelector('svg');
+      if (!chartContainer || !svgElement) return;
+
+      // 獲取淨利率標籤容器（作為百分比參考）
+      const marginValuesContainer = container.querySelector('.margin-values-compact');
+      if (!marginValuesContainer) return;
+
+      // 獲取所有文本元素
+      const allTexts = Array.from(svgElement.querySelectorAll('text'));
+
+      // 使用實際位置來找出 X 軸標籤
+      const textsWithPosition = allTexts.map(el => ({
+        element: el,
+        text: el.textContent,
+        rect: el.getBoundingClientRect()
+      }));
+
+      // 找出最底部的 Y 位置
+      const maxY = Math.max(...textsWithPosition.map(t => t.rect.bottom));
+      const threshold = maxY - 30; // 底部 30px 範圍內
+
+      // 過濾出底部區域的年份文本，且數量與 labels 相同
+      const xLabels = textsWithPosition
+        .filter(t => t.text.match(/^\d{4}$/) && t.rect.bottom >= threshold)
+        .sort((a, b) => a.rect.left - b.rect.left)
+        .slice(0, labels.length) // 確保只取與 labels 相同數量
+        .map(t => t.element);
+
+      if (!xLabels.length) return;
+
+      // 獲取容器位置（用於計算相對位置）
+      const containerRect = marginValuesContainer.getBoundingClientRect();
+
+      // 計算每個標籤相對於 .margin-values-compact 的位置百分比
+      const positions = xLabels.map((label) => {
+        const labelRect = label.getBoundingClientRect();
+        const labelCenter = labelRect.left + labelRect.width / 2;
+        const relativeX = labelCenter - containerRect.left;
+
+        return {
+          year: label.textContent,
+          percentage: (relativeX / containerRect.width) * 100
+        };
+      });
+
+      setBarPositions(positions);
+      setIsPositionReady(true);
+    }, 100); // 短暫延遲確保圖表已渲染
+
+    return () => clearTimeout(timer);
+  }, [resizeKey, labels]);
 
   // 自訂 Tooltip
   const BarTooltip = ({ id, value, index, color }) => {
@@ -321,20 +379,48 @@ function FinanceChart({ labels, revenue, profit, selectedYear, onYearChange }) {
       <div className="margin-labels-section-compact">
         <div className="margin-title-compact">淨利率%</div>
         <div className="margin-values-compact">
-          {margins.map((item, index) => (
-            <div
-              key={item.year}
-              className={`margin-value-compact ${item.year === selectedYear ? 'margin-value-active' : ''}`}
-              onClick={() => onYearChange(item.year)}
-              style={{
-                position: 'absolute',
-                left: `${getBarCenterPosition(index)}%` // 使用實測的長條圖中心位置：-4%, 19.2%, 42.3%, 65.4%, 88.6%
-              }}
-            >
-              <div className="margin-percent-compact">{item.margin}</div>
-              <div className="margin-year-compact">{item.year}</div>
-            </div>
-          ))}
+          {isPositionReady ? (
+            <React.Fragment key="calculated-positions">
+              {margins.map((item) => {
+                const position = barPositions.find(p => p.year === item.year);
+                if (!position) return null;
+
+                return (
+                  <div
+                    key={item.year}
+                    className={`margin-value-compact ${item.year === selectedYear ? 'margin-value-active' : ''}`}
+                    onClick={() => onYearChange(item.year)}
+                    style={{
+                      position: 'absolute',
+                      left: `${position.percentage}%`,
+                      transform: 'translateX(-50%)'
+                    }}
+                  >
+                    <div className="margin-percent-compact">{item.margin}</div>
+                    <div className="margin-year-compact">{item.year}</div>
+                  </div>
+                );
+              })}
+            </React.Fragment>
+          ) : (
+            <React.Fragment key="fallback-positions">
+              {margins.map((item, index) => (
+                <div
+                  key={item.year}
+                  className={`margin-value-compact ${item.year === selectedYear ? 'margin-value-active' : ''}`}
+                  onClick={() => onYearChange(item.year)}
+                  style={{
+                    position: 'absolute',
+                    left: `${((index + 0.5) / labels.length) * 100}%`,
+                    transform: 'translateX(-50%)'
+                  }}
+                >
+                  <div className="margin-percent-compact">{item.margin}</div>
+                  <div className="margin-year-compact">{item.year}</div>
+                </div>
+              ))}
+            </React.Fragment>
+          )}
         </div>
       </div>
     </div>
