@@ -830,28 +830,11 @@ app.post('/api/pl-income/batch-import', async (req, res) => {
 
     const repo = await createRepository();
 
-    const results = {
-      inserted: 0,
-      updated: 0,
-      skipped: 0,
-      errors: []
-    };
+    // 不需要數值轉換的文字欄位
+    const PL_TEXT_FIELDS = new Set(['tax_id', 'company_name', 'account_item']);
 
-    for (let i = 0; i < records.length; i++) {
-      const record = records[i];
-
-      // 驗證必要欄位
-      if (!record.fiscal_year || !record.tax_id) {
-        results.skipped++;
-        results.errors.push({
-          row: i + 1,
-          reason: '缺少必填欄位 fiscal_year 或 tax_id'
-        });
-        continue;
-      }
-
-      // 清理資料，只保留有效的欄位，並轉換型別
-      const PL_TEXT_FIELDS = new Set(['tax_id', 'company_name', 'account_item']);
+    // 清理資料，只保留有效的欄位，並轉換型別
+    const cleanRecords = records.map(record => {
       const cleanRecord = {};
       for (const [key, value] of Object.entries(record)) {
         if (!PL_INCOME_BASICS_COLUMNS.has(key)) continue;
@@ -868,29 +851,10 @@ app.post('/api/pl-income/batch-import', async (req, res) => {
           cleanRecord[key] = isNaN(num) ? null : num;
         }
       }
+      return cleanRecord;
+    });
 
-      // 檢查是否為新增或更新
-      const existing = await repo.getPlIncomeByTaxIdAndYear(cleanRecord.tax_id, cleanRecord.fiscal_year);
-
-      const isUpdate = !!existing;
-
-      // 執行 upsert
-      try {
-        await repo.upsertPlIncome(cleanRecord);
-        if (isUpdate) {
-          results.updated++;
-        } else {
-          results.inserted++;
-        }
-      } catch (upsertError) {
-        results.skipped++;
-        results.errors.push({
-          row: i + 1,
-          reason: upsertError.message
-        });
-        continue;
-      }
-    }
+    const results = await repo.batchUpsertPlIncome(cleanRecords);
 
     res.json({
       success: true,
