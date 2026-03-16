@@ -237,8 +237,20 @@ export async function GET(request) {
       return errorResponse('公司資料不存在', 404);
     }
 
-    // 計算指標
+    // 計算指標（使用完整資料確保成長率等需要前一年度的指標正確計算）
     const metrics = calculateMetrics(incomeResult.data, balanceResult.data);
+
+    // 只保留最近 5 年指標
+    const DISPLAY_YEARS = 5;
+    if (metrics.years.length > DISPLAY_YEARS) {
+      const startIndex = metrics.years.length - DISPLAY_YEARS;
+      metrics.years = metrics.years.slice(startIndex);
+      Object.keys(metrics).forEach(key => {
+        if (key !== 'years' && Array.isArray(metrics[key])) {
+          metrics[key] = metrics[key].slice(startIndex);
+        }
+      });
+    }
 
     return successResponse({
       success: true,

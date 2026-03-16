@@ -13,6 +13,14 @@ export async function GET(request) {
     const repo = await createRepository();
     const result = await repo.getFinancialDataByCompany(company);
 
+    // 只保留最近 5 年資料
+    const DISPLAY_YEARS = 5;
+    if (result.data && result.data.labels && result.data.labels.length > DISPLAY_YEARS) {
+      result.data.labels = result.data.labels.slice(-DISPLAY_YEARS);
+      result.data.revenue = result.data.revenue.slice(-DISPLAY_YEARS);
+      result.data.profit = result.data.profit.slice(-DISPLAY_YEARS);
+    }
+
     return successResponse(result);
   } catch (error) {
     console.error('取得財務資料失敗:', error);

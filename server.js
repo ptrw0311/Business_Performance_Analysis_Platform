@@ -71,6 +71,14 @@ app.get('/api/financial/by-name', async (req, res) => {
       profit.push(convertToMillions(row.profit_before_tax));
     });
 
+    // 只保留最近 5 年資料
+    const DISPLAY_YEARS = 5;
+    if (labels.length > DISPLAY_YEARS) {
+      labels.splice(0, labels.length - DISPLAY_YEARS);
+      revenue.splice(0, revenue.length - DISPLAY_YEARS);
+      profit.splice(0, profit.length - DISPLAY_YEARS);
+    }
+
     res.json({
       company: company,
       data: { labels, revenue, profit },
@@ -100,8 +108,20 @@ app.get('/api/financial/basics', async (req, res) => {
       return res.status(404).json({ error: '公司資料不存在' });
     }
 
-    // 計算財務指標
+    // 計算財務指標（使用完整資料確保成長率等需要前一年度的指標正確計算）
     const metrics = calculateMetrics(incomeData, balanceData);
+
+    // 只保留最近 5 年指標
+    const DISPLAY_YEARS = 5;
+    if (metrics.years.length > DISPLAY_YEARS) {
+      const startIndex = metrics.years.length - DISPLAY_YEARS;
+      metrics.years = metrics.years.slice(startIndex);
+      Object.keys(metrics).forEach(key => {
+        if (key !== 'years' && Array.isArray(metrics[key])) {
+          metrics[key] = metrics[key].slice(startIndex);
+        }
+      });
+    }
 
     res.json({
       success: true,

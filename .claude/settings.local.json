@@ -82,7 +82,15 @@
       "Bash(DATABASE_TYPE=supabase node:*)",
       "Bash(DATABASE_TYPE=supabase SUPABASE_URL=$SUPABASE_URL SUPABASE_ANON_KEY=$SUPABASE_ANON_KEY node:*)",
       "Bash(cmd //c \"taskkill /F /PID 6344 & taskkill /F /IM node.exe\")",
-      "Bash(tasklist:*)"
+      "Bash(tasklist:*)",
+      "mcp__playwright__browser_resize",
+      "Bash(cd D:/vscode/Business_Performance_Analysis_Platform && rm api/financial/bulk.js api/financial/index.js && echo \"Deleted legacy endpoints\")",
+      "mcp__playwright__browser_file_upload",
+      "Bash(cd D:/vscode/Business_Performance_Analysis_Platform && mv openspec/changes/fix-excel-batch-import openspec/changes/archive/2026-03-12-fix-excel-batch-import 2>&1)",
+      "Bash(cd D:/vscode/Business_Performance_Analysis_Platform && mkdir -p openspec/changes/archive/2026-03-12-fix-excel-batch-import/specs/excel-import-export && cp openspec/changes/fix-excel-batch-import/proposal.md openspec/changes/archive/2026-03-12-fix-excel-batch-import/ && cp openspec/changes/fix-excel-batch-import/tasks.md openspec/changes/archive/2026-03-12-fix-excel-batch-import/ && cp openspec/changes/fix-excel-batch-import/specs/excel-import-export/spec.md openspec/changes/archive/2026-03-12-fix-excel-batch-import/specs/excel-import-export/ && rm -rf openspec/changes/fix-excel-batch-import && echo \"Done\")",
+      "Bash(cd:*)",
+      "Bash(npm list:*)",
+      "Bash(find:*)"
     ]
   }
 }

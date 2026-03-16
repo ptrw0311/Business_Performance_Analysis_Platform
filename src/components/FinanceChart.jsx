@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useState, useEffect } from 'react';
+import React, { useMemo, useRef } from 'react';
 import { ResponsiveBar } from '@nivo/bar';
 import { useChartResize } from '../hooks/useChartResize';
 
@@ -11,10 +11,6 @@ function FinanceChart({ labels, revenue, profit, selectedYear, onYearChange }) {
   const containerRef = useRef(null);
   const resizeKey = useChartResize(containerRef);
 
-  // 動態追蹤長條圖位置
-  const [barPositions, setBarPositions] = useState([]);
-  const [isPositionReady, setIsPositionReady] = useState(false);
-
   // 準備長條圖資料（營收）
   const barData = useMemo(() => {
     if (!labels || !revenue) return [];
@@ -22,15 +18,6 @@ function FinanceChart({ labels, revenue, profit, selectedYear, onYearChange }) {
       year,
       revenue: revenue[index],
       profit: profit[index], // 加入 profit 以便在 layer 中使用
-    }));
-  }, [labels, revenue, profit]);
-
-  // 淨利率資料
-  const margins = useMemo(() => {
-    if (!labels || !revenue || !profit) return [];
-    return labels.map((year, i) => ({
-      year,
-      margin: revenue[i] > 0 ? ((profit[i] / revenue[i]) * 100).toFixed(1) + '%' : '0.0%',
     }));
   }, [labels, revenue, profit]);
 
@@ -54,73 +41,6 @@ function FinanceChart({ labels, revenue, profit, selectedYear, onYearChange }) {
   const lineMaxValue = useMemo(() => {
     return maxProfit * 3;
   }, [maxProfit]);
-
-  // 使用 useEffect 在圖表渲染後計算長條圖位置
-  useEffect(() => {
-    // 當 labels 改變時，重置狀態
-    setIsPositionReady(false);
-    setBarPositions([]);
-
-    if (!containerRef.current || !labels.length) return;
-
-    // 等待圖表渲染完成
-    const timer = setTimeout(() => {
-      const container = containerRef.current;
-      if (!container) return;
-
-      // 獲取圖表容器和 SVG
-      const chartContainer = container.querySelector('.chart-nivo-container');
-      const svgElement = chartContainer?.querySelector('svg');
-      if (!chartContainer || !svgElement) return;
-
-      // 獲取淨利率標籤容器（作為百分比參考）
-      const marginValuesContainer = container.querySelector('.margin-values-compact');
-      if (!marginValuesContainer) return;
-
-      // 獲取所有文本元素
-      const allTexts = Array.from(svgElement.querySelectorAll('text'));
-
-      // 使用實際位置來找出 X 軸標籤
-      const textsWithPosition = allTexts.map(el => ({
-        element: el,
-        text: el.textContent,
-        rect: el.getBoundingClientRect()
-      }));
-
-      // 找出最底部的 Y 位置
-      const maxY = Math.max(...textsWithPosition.map(t => t.rect.bottom));
-      const threshold = maxY - 30; // 底部 30px 範圍內
-
-      // 過濾出底部區域的年份文本，且數量與 labels 相同
-      const xLabels = textsWithPosition
-        .filter(t => t.text.match(/^\d{4}$/) && t.rect.bottom >= threshold)
-        .sort((a, b) => a.rect.left - b.rect.left)
-        .slice(0, labels.length) // 確保只取與 labels 相同數量
-        .map(t => t.element);
-
-      if (!xLabels.length) return;
-
-      // 獲取容器位置（用於計算相對位置）
-      const containerRect = marginValuesContainer.getBoundingClientRect();
-
-      // 計算每個標籤相對於 .margin-values-compact 的位置百分比
-      const positions = xLabels.map((label) => {
-        const labelRect = label.getBoundingClientRect();
-        const labelCenter = labelRect.left + labelRect.width / 2;
-        const relativeX = labelCenter - containerRect.left;
-
-        return {
-          year: label.textContent,
-          percentage: (relativeX / containerRect.width) * 100
-        };
-      });
-
-      setBarPositions(positions);
-      setIsPositionReady(true);
-    }, 100); // 短暫延遲確保圖表已渲染
-
-    return () => clearTimeout(timer);
-  }, [resizeKey, labels]);
 
   // 自訂 Tooltip
   const BarTooltip = ({ id, value, index, color }) => {
@@ -179,7 +99,7 @@ function FinanceChart({ labels, revenue, profit, selectedYear, onYearChange }) {
           data={barData}
           keys={['revenue']}
           indexBy="year"
-          margin={{ top: 60, right: 20, bottom: 50, left: 65 }}
+          margin={{ top: 60, right: 20, bottom: 75, left: 65 }}
           padding={0.25}
           layout="vertical"
           valueScale={{ type: 'linear' }}
@@ -209,9 +129,6 @@ function FinanceChart({ labels, revenue, profit, selectedYear, onYearChange }) {
             tickSize: 0,
             tickPadding: 12,
             tickRotation: 0,
-            style: {
-              tick: { fill: '#475569', fontSize: 20, fontWeight: 600 },
-            },
           }}
           enableGridY={true}
           gridYValues={5}
@@ -234,7 +151,7 @@ function FinanceChart({ labels, revenue, profit, selectedYear, onYearChange }) {
             'labels',
             'legends',
             // 自訂 layer：營收標籤
-            ({ bars, xScale, yScale }) => {
+            ({ bars }) => {
               return bars.map((bar) => {
                 const xPos = bar.x + bar.width / 2;
                 const yPos = bar.y - 8;
@@ -256,6 +173,65 @@ function FinanceChart({ labels, revenue, profit, selectedYear, onYearChange }) {
                   </text>
                 );
               });
+            },
+            // 自訂 layer：淨利率標籤（SVG 內渲染，保證對齊）
+            ({ bars, innerHeight }) => {
+              return (
+                <g key="margin-labels-layer">
+                  {/* 「淨利率%」標題 */}
+                  <text
+                    x={-55}
+                    y={innerHeight + 57}
+                    style={{
+                      fontSize: '12px',
+                      fontWeight: 600,
+                      fill: '#64748b',
+                    }}
+                  >
+                    淨利率%
+                  </text>
+                  {bars.map((bar, index) => {
+                    const xPos = bar.x + bar.width / 2;
+                    const isSelected = bar.data.year === selectedYear;
+                    const marginValue = revenue[index] > 0
+                      ? ((profit[index] / revenue[index]) * 100).toFixed(1) + '%'
+                      : '0.0%';
+                    return (
+                      <g
+                        key={`margin-${bar.data.year}`}
+                        onClick={() => onYearChange(bar.data.year)}
+                        style={{ cursor: 'pointer' }}
+                      >
+                        {/* 選中高亮背景 */}
+                        {isSelected && (
+                          <rect
+                            x={xPos - 28}
+                            y={innerHeight + 40}
+                            width={56}
+                            height={24}
+                            rx={6}
+                            fill="rgba(59, 130, 246, 0.15)"
+                          />
+                        )}
+                        {/* 淨利率數值 */}
+                        <text
+                          x={xPos}
+                          y={innerHeight + 57}
+                          textAnchor="middle"
+                          style={{
+                            fontSize: '13px',
+                            fontWeight: 700,
+                            fill: isSelected ? '#3b82f6' : '#64748b',
+                            fontFamily: "'SF Mono', 'Roboto Mono', monospace",
+                          }}
+                        >
+                          {marginValue}
+                        </text>
+                      </g>
+                    );
+                  })}
+                </g>
+              );
             },
             // 自訂 layer：折線圖
             ({ bars, xScale, yScale, innerWidth, innerHeight }) => {
@@ -281,14 +257,13 @@ function FinanceChart({ labels, revenue, profit, selectedYear, onYearChange }) {
                 };
               });
 
-              // 生成折线路徑（monotoneX 曲線）
+              // 生成折线路徑
               let pathD = '';
               if (points.length === 1) {
                 pathD = `M ${points[0].x} ${points[0].y}`;
               } else if (points.length >= 2) {
                 pathD = `M ${points[0].x} ${points[0].y}`;
                 for (let i = 1; i < points.length; i++) {
-                  // 使用簡單的直線連接（可改為曲線）
                   pathD += ` L ${points[i].x} ${points[i].y}`;
                 }
               }
@@ -373,55 +348,6 @@ function FinanceChart({ labels, revenue, profit, selectedYear, onYearChange }) {
             },
           }}
         />
-      </div>
-
-      {/* 底部淨利率標籤區 - 精簡版 */}
-      <div className="margin-labels-section-compact">
-        <div className="margin-title-compact">淨利率%</div>
-        <div className="margin-values-compact">
-          {isPositionReady ? (
-            <React.Fragment key="calculated-positions">
-              {margins.map((item) => {
-                const position = barPositions.find(p => p.year === item.year);
-                if (!position) return null;
-
-                return (
-                  <div
-                    key={item.year}
-                    className={`margin-value-compact ${item.year === selectedYear ? 'margin-value-active' : ''}`}
-                    onClick={() => onYearChange(item.year)}
-                    style={{
-                      position: 'absolute',
-                      left: `${position.percentage}%`,
-                      transform: 'translateX(-50%)'
-                    }}
-                  >
-                    <div className="margin-percent-compact">{item.margin}</div>
-                    <div className="margin-year-compact">{item.year}</div>
-                  </div>
-                );
-              })}
-            </React.Fragment>
-          ) : (
-            <React.Fragment key="fallback-positions">
-              {margins.map((item, index) => (
-                <div
-                  key={item.year}
-                  className={`margin-value-compact ${item.year === selectedYear ? 'margin-value-active' : ''}`}
-                  onClick={() => onYearChange(item.year)}
-                  style={{
-                    position: 'absolute',
-                    left: `${((index + 0.5) / labels.length) * 100}%`,
-                    transform: 'translateX(-50%)'
-                  }}
-                >
-                  <div className="margin-percent-compact">{item.margin}</div>
-                  <div className="margin-year-compact">{item.year}</div>
-                </div>
-              ))}
-            </React.Fragment>
-          )}
-        </div>
       </div>
     </div>
   );
