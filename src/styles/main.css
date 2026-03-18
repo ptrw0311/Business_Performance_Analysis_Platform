@@ -2075,7 +2075,7 @@ select {
 
 .indicator-reason {
   font-size: 11px;
-  color: var(--text-tertiary);
+  color: var(--text-primary);
   margin-top: 2px;
 }
 
@@ -2092,7 +2092,7 @@ select {
 
 .indicator-criteria {
   font-size: 11px;
-  color: var(--text-tertiary);
+  color: var(--text-primary);
   padding: 2px 6px;
   background: var(--bg-tertiary);
   border-radius: var(--radius-sm);
