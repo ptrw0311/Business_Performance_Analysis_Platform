@@ -38,7 +38,7 @@ function StatCards({ companyName, labels, revenue, profit }) {
         </div>
       </div>
       <div className="stat-card">
-        <h3>{stats.yearCount}年平均淨利</h3>
+        <h3>{stats.yearCount}年平均稅前淨利</h3>
         <div className="value">
           {stats.avgProfit} <span className="stat-unit">百萬</span>
         </div>

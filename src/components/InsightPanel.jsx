@@ -71,7 +71,7 @@ function InsightPanel({ labels, revenue, profit, selectedYear, onYearChange }) {
         <div style={{ display: 'grid', gridTemplateColumns: '100px 1fr', gap: '10px', alignItems: 'center', marginBottom: '8px' }}>
           <div style={{ fontWeight: 'bold', color: '#78350f' }}>獲利能力</div>
           <div>
-            <span className={pClass}>{pIcon} 淨利{proDiff >= 0 ? '增加' : '減少'} {Math.round(Math.abs(proDiff)).toLocaleString()} 百萬</span>
+            <span className={pClass}>{pIcon} 稅前淨利{proDiff >= 0 ? '增加' : '減少'} {Math.round(Math.abs(proDiff)).toLocaleString()} 百萬</span>
             <span style={{ fontSize: '0.9em', color: '#888' }}>(YoY: {pPct})</span>
           </div>
         </div>

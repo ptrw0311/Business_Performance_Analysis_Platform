@@ -85,7 +85,7 @@ function FinanceChart({ labels, revenue, profit, selectedYear, onYearChange }) {
         </div>
         <div className="legend-item">
           <span className="legend-color legend-color-line"></span>
-          <span className="legend-label">淨利</span>
+          <span className="legend-label">稅前淨利</span>
         </div>
       </div>
 
