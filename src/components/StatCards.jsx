@@ -44,9 +44,9 @@ function StatCards({ companyName, labels, revenue, profit }) {
         </div>
       </div>
       <div className="stat-card">
-        <h3>{stats.yearCount}年平均淨利率</h3>
+        <h3>{stats.yearCount}年平均稅前淨利率</h3>
         <div className="value">{stats.avgMar}</div>
-        <div className="stat-unit" style={{ fontSize: '12px' }}>(總淨利/總營收)</div>
+        <div className="stat-unit" style={{ fontSize: '12px' }}>總稅前淨利/總營收</div>
       </div>
     </div>
   );

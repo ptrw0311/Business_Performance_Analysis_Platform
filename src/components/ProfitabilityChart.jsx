@@ -26,7 +26,7 @@ function ProfitabilityChart({ metrics }) {
   // 自訂圖例名稱
   const data = useMemo(() => {
     const nameMap = {
-      netProfitMargin: '淨利率%',
+      netProfitMargin: '稅前淨利率%',
       grossMargin: '毛利率%',
     };
     return rawData.map(serie => ({
@@ -149,21 +149,40 @@ function ProfitabilityChart({ metrics }) {
           'points',
           PointLabelsLayer,
           'slices',
-          'legends',
-        ]}
-        legends={[
-          {
-            anchor: 'bottom',
-            direction: 'row',
-            justify: 'center',
-            translateX: 0,
-            translateY: 40,
-            itemsSpacing: 20,
-            itemWidth: 60,
-            itemHeight: 20,
-            itemDirection: 'left-to-right',
-            symbolSize: 10,
-            symbolShape: 'square',
+          // 自訂 legend layer：色塊與文字距離一致
+          ({ innerWidth, innerHeight }) => {
+            const items = [
+              { color: '#10b981', label: '毛利率%' },
+              { color: '#f59e0b', label: '稅前淨利率%' },
+            ];
+            const gap = 6;       // 色塊與文字間距
+            const itemGap = 21;  // 兩組 item 間距
+            const boxSize = 10;
+            const fontSize = 11;
+            // 計算總寬度以置中
+            const totalWidth = items.reduce((sum, item, i) => {
+              const textWidth = item.label.length * fontSize * 0.55;
+              return sum + boxSize + gap + textWidth + (i < items.length - 1 ? itemGap : 0);
+            }, 0);
+            let x = (innerWidth - totalWidth) / 2;
+            const y = innerHeight + 30;
+            return (
+              <g key="custom-legend">
+                {items.map((item) => {
+                  const textWidth = item.label.length * fontSize * 0.55;
+                  const node = (
+                    <g key={item.label}>
+                      <rect x={x} y={y} width={boxSize} height={boxSize} fill={item.color} rx={2} />
+                      <text x={x + boxSize + gap} y={y + boxSize / 2} dominantBaseline="central" style={{ fontSize: `${fontSize}px`, fill: '#333' }}>
+                        {item.label}
+                      </text>
+                    </g>
+                  );
+                  x += boxSize + gap + textWidth + itemGap;
+                  return node;
+                })}
+              </g>
+            );
           },
         ]}
       />
