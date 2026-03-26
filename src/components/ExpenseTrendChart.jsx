@@ -5,7 +5,7 @@ import { useChartResize } from '../hooks/useChartResize';
 
 /**
  * 費用率趨勢圖表 (Expense Trend)
- * 顯示推銷費用、管理費用、研發費用佔比的趨勢
+ * 顯示推銷費用、管理費用、研發費用占比的趨勢
  */
 
 // 自訂 Layer - 在折線端點顯示數值

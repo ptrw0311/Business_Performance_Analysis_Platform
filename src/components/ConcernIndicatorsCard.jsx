@@ -294,25 +294,25 @@ function getConcernIndicators(metrics, selectedYear) {
     });
   }
 
-  // 16. 存貨周轉率: 小於2
+  // 16. 存貨週轉率: 小於2
   if (safeValue(latest.inventoryTurnover) < 2 && safeValue(latest.inventoryTurnover) !== null) {
     concerns.push({
-      metric: '存貨周轉',
+      metric: '存貨週轉',
       value: latest.inventoryTurnover,
       unit: '次',
       criteria: '<2次',
-      reason: '存貨周轉偏低'
+      reason: '存貨週轉偏低'
     });
   }
 
-  // 17. 存貨周轉率: 連續三年皆呈現負成長
+  // 17. 存貨週轉率: 連續三年皆呈現負成長
   if (isNegativeGrowth(metrics, 'inventoryTurnover', selectedYear, 3)) {
     concerns.push({
-      metric: '存貨周轉',
+      metric: '存貨週轉',
       value: latest.inventoryTurnover,
       unit: '次',
       criteria: '連續三年負成長',
-      reason: '存貨周轉持續下降'
+      reason: '存貨週轉持續下降'
     });
   }
 
@@ -416,10 +416,10 @@ function getConcernIndicators(metrics, selectedYear) {
     });
   }
 
-  // 27. 管理費用佔比: 占比超過5%
+  // 27. 管理費用占比: 占比超過5%
   if (safeValue(latest.adminExpenseRatio) > 5) {
     concerns.push({
-      metric: '管理費用佔比',
+      metric: '管理費用占比',
       value: latest.adminExpenseRatio,
       unit: '%',
       criteria: '>5%',
@@ -427,10 +427,10 @@ function getConcernIndicators(metrics, selectedYear) {
     });
   }
 
-  // 28. 管理費用佔比: 連續三年皆呈現正成長
+  // 28. 管理費用占比: 連續三年皆呈現正成長
   if (isPositiveGrowth(metrics, 'adminExpenseRatio', selectedYear, 3)) {
     concerns.push({
-      metric: '管理費用佔比',
+      metric: '管理費用占比',
       value: latest.adminExpenseRatio,
       unit: '%',
       criteria: '連續三年正成長',
@@ -438,10 +438,10 @@ function getConcernIndicators(metrics, selectedYear) {
     });
   }
 
-  // 29. 管理費用佔比: 相較去年度成長超過3%
+  // 29. 管理費用占比: 相較去年度成長超過3%
   if (previous && (safeValue(latest.adminExpenseRatio) - safeValue(previous.adminExpenseRatio) > 3)) {
     concerns.push({
-      metric: '管理費用佔比',
+      metric: '管理費用占比',
       value: latest.adminExpenseRatio,
       unit: '%',
       criteria: '年增>3%',
@@ -449,10 +449,10 @@ function getConcernIndicators(metrics, selectedYear) {
     });
   }
 
-  // 30. 研發費用佔比: 占比超過5%
+  // 30. 研發費用占比: 占比超過5%
   if (safeValue(latest.rdExpenseRatio) > 5) {
     concerns.push({
-      metric: '研發費用佔比',
+      metric: '研發費用占比',
       value: latest.rdExpenseRatio,
       unit: '%',
       criteria: '>5%',
@@ -460,10 +460,10 @@ function getConcernIndicators(metrics, selectedYear) {
     });
   }
 
-  // 31. 研發費用佔比: 連續三年皆呈現正成長
+  // 31. 研發費用占比: 連續三年皆呈現正成長
   if (isPositiveGrowth(metrics, 'rdExpenseRatio', selectedYear, 3)) {
     concerns.push({
-      metric: '研發費用佔比',
+      metric: '研發費用占比',
       value: latest.rdExpenseRatio,
       unit: '%',
       criteria: '連續三年正成長',
@@ -471,10 +471,10 @@ function getConcernIndicators(metrics, selectedYear) {
     });
   }
 
-  // 32. 研發費用佔比: 相較去年度成長超過3%
+  // 32. 研發費用占比: 相較去年度成長超過3%
   if (previous && (safeValue(latest.rdExpenseRatio) - safeValue(previous.rdExpenseRatio) > 3)) {
     concerns.push({
-      metric: '研發費用佔比',
+      metric: '研發費用占比',
       value: latest.rdExpenseRatio,
       unit: '%',
       criteria: '年增>3%',

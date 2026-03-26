@@ -13,13 +13,13 @@ const METRICS = [
   { key: 'quickRatio', name: '速動比率', unit: '', displayFormat: 'ratio' },
   { key: 'debtEquityRatio', name: '負債淨值比', unit: '', displayFormat: 'ratio' },
   { key: 'arTurnover', name: '應收週轉', unit: '次', displayFormat: 'turnoverInt' },
-  { key: 'inventoryTurnover', name: '存貨周轉', unit: '次', displayFormat: 'turnoverInt' },
+  { key: 'inventoryTurnover', name: '存貨週轉', unit: '次', displayFormat: 'turnoverInt' },
   { key: 'revenueGrowth', name: '營收成長率', unit: '', displayFormat: 'percentIntColor' },
   { key: 'grossProfitGrowth', name: '毛利成長率', unit: '', displayFormat: 'percentInt' },
   { key: 'profitBeforeTaxGrowth', name: '稅前淨利成長率', unit: '', displayFormat: 'percentInt' },
   { key: 'sellingExpenseRatio', name: '推銷費用占比', unit: '', displayFormat: 'percentInt' },
-  { key: 'adminExpenseRatio', name: '管理費用佔比', unit: '', displayFormat: 'percentInt' },
-  { key: 'rdExpenseRatio', name: '研發費用佔比', unit: '', displayFormat: 'percentInt' },
+  { key: 'adminExpenseRatio', name: '管理費用占比', unit: '', displayFormat: 'percentInt' },
+  { key: 'rdExpenseRatio', name: '研發費用占比', unit: '', displayFormat: 'percentInt' },
 ];
 
 /**

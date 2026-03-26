@@ -5,7 +5,7 @@ import { useChartResize } from '../hooks/useChartResize';
 
 /**
  * 存貨週轉圖表 (Inventory)
- * 存貨周轉 - 混合圖 (長條圖)
+ * 存貨週轉 - 混合圖 (長條圖)
  * 注意: 需處理異常值 (如 31331)
  */
 

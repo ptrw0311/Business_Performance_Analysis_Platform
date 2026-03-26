@@ -240,10 +240,10 @@ function getPositiveIndicators(metrics, selectedYear) {
     });
   }
 
-  // 13. 存貨周轉率: 大於4
+  // 13. 存貨週轉率: 大於4
   if (safeValue(latest.inventoryTurnover) > 4) {
     positives.push({
-      metric: '存貨周轉',
+      metric: '存貨週轉',
       value: latest.inventoryTurnover,
       unit: '次',
       criteria: '>4次',
